@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+
+
+
 @Getter
 @Setter
 @Builder
@@ -12,10 +15,13 @@ import lombok.*;
 public class SentimentResponseDTO {
 
     @Schema(example = "Positivo")
-    @JsonProperty("prediction")
+    @JsonProperty("prevision")  // ← Cambiado a "prevision"
     private String prediction;
 
     @Schema(example = "0.87")
-    @JsonProperty("probability")
+    @JsonProperty("probabilidad")
     private Double probability;
+
+
 }
+

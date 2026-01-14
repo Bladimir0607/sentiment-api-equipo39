@@ -27,6 +27,11 @@ public class SentimentAnalysis {
     @Column(nullable = false)
     private Double probability;
 
+    // Relación con el usuario
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

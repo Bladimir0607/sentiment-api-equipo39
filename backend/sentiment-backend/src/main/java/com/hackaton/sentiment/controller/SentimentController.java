@@ -3,6 +3,7 @@ package com.hackaton.sentiment.controller;
 import com.hackaton.sentiment.dto.request.SentimentRequestDTO;
 import com.hackaton.sentiment.dto.response.SentimentResponseDTO;
 import com.hackaton.sentiment.dto.response.SentimentStatsResponseDTO;
+import com.hackaton.sentiment.entity.SentimentAnalysis;
 import com.hackaton.sentiment.service.SentimentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/sentiment")
@@ -41,5 +44,15 @@ public class SentimentController {
     @GetMapping("/stats")
     public SentimentStatsResponseDTO stats() {
         return sentimentService.getStats();
+    }
+
+    //  USER - ver sus propios análisis
+    @Operation(
+            summary = "Ver mis análisis",
+            description = "Obtiene todos los análisis realizados por el usuario actual"
+    )
+    @GetMapping("/my-analyses")
+    public List<SentimentAnalysis> getMyAnalyses() {
+        return sentimentService.getMyAnalyses();
     }
 }

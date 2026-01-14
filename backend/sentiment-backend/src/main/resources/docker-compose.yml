@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # SERVICIO MYSQL (BASE DE DATOS)
+  # ============================================================
+  # Contenedor MySQL 8.0 para almacenar traducciones y análisis
+  # Se expone en puerto 3307 para evitar conflicto con MySQL local
+
+  mysql:
+    image: mysql:8.0  # Imagen oficial de MySQL
+    container_name: sentiment-mysql  # Nombre del contenedor
+    env_file:
+      - .env
+    ports:
+      - "3307:3306"  # Puerto local 3307 -> Puerto contenedor 3306
+    volumes:
+      - mysql-data:/var/lib/mysql  # Volumen persistente para datos
+      - ./init-scripts:/docker-entrypoint-initdb.d  # Scripts de inicialización
+    restart: unless-stopped  # Reinicia automáticamente si falla
+    command: --default-authentication-plugin=mysql_native_password  # Compatibilidad
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]  # Verificación de salud
+      timeout: 20s
+      retries: 10
+      start_period: 30s
+
+  # ============================================================
+  # SERVICIO REDIS (SISTEMA DE CACHÉ)
+  # ============================================================
+  # Redis almacena traducciones frecuentes para mejorar rendimiento
+  # Usa política LRU (Least Recently Used) para gestión de memoria
+
+  redis:
+    image: redis:alpine  # Imagen Alpine (ligera)
+    container_name: sentiment-redis
+    ports:
+      - "6379:6379"  # Puerto estándar de Redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]  # Verifica que Redis responda
+      timeout: 10s
+      retries: 5
+
+  # ============================================================
+  # SERVICIO LIBRETRANSLATE (TRADUCCIÓN AUTOMÁTICA)
+  # ============================================================
+  # Servicio de traducción automática que soporta más de 100 idiomas
+  # Configurado para cargar TODOS los idiomas disponibles
+
+  libretranslate:
+    image: libretranslate/libretranslate  # Imagen oficial
+    container_name: sentiment-libretranslate
+    ports:
+      - "5000:5000"  # Puerto donde escucha el servicio
+    environment:
+      #  CONFIGURACIÓN CRÍTICA PARA SOPORTAR TODOS LOS IDIOMAS
+      LT_LOAD_ONLY: ""  # Cadena vacía = Cargar TODOS los idiomas
+      LT_UPDATE_MODELS: "false"  # No actualizar modelos automáticamente
+      LT_THREADS: "2"  # Hilos para procesamiento concurrente
+
+      # Configuraciones por defecto (el backend las sobrescribe)
+      LT_DEFAULT_FROM: "es"  # Idioma origen predeterminado
+      LT_DEFAULT_TO: "es"    # Idioma destino predeterminado
+
+      LT_WAIT_TIME: "1"  # Tiempo de espera entre solicitudes
+      LT_API_KEYS: "false"  # Sin autenticación para desarrollo
+    restart: unless-stopped
+    healthcheck:
+      # Verifica que el servicio esté listo (puede tardar en cargar modelos)
+      test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 90s  # Tiempo extra para carga inicial
+    deploy:
+      resources:
+        limits:
+          memory: 3G  # Límite de memoria RAM
+        reservations:
+          memory: 1G  # Memoria reservada al inicio
+
+# ============================================================
+# VOLÚMENES PERSISTENTES
+# ============================================================
+# Los volúmenes permiten que los datos persistan al reiniciar contenedores
+
+volumes:
+  mysql-data:
+    driver: local  # Almacenamiento local en el host
+
+# ============================================================
+# CONFIGURACIÓN DE REDES
+# ============================================================
+# Red aislada para comunicación entre servicios
+
+networks:
+  default:
+    name: sentiment-network  # Nombre de la red personalizada

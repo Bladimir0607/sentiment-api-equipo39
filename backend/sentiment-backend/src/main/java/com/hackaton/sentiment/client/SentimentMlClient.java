@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
+/** Realizando la primera prueba */
 @Component
 @RequiredArgsConstructor
 public class SentimentMlClient {

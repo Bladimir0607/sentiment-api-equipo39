@@ -7,7 +7,7 @@ import com.hackaton.sentiment.dto.response.SentimentStatsResponseDTO;
 import com.hackaton.sentiment.exception.GlobalExceptionHandler;
 import com.hackaton.sentiment.exception.MlServiceException;
 import com.hackaton.sentiment.service.SentimentService;
-import com.hackaton.sentiment.service.SimpleTranslationService;
+import com.hackaton.sentiment.service.TranslationService; // 👈 CAMBIO
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -34,13 +34,12 @@ class SentimentControllerTest {
     private SentimentService sentimentService;
 
     @MockitoBean
-    private SimpleTranslationService translationService;
+    private TranslationService translationService; // 👈 CAMBIO
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     void analyze_shouldReturn200_WhenValidText() throws Exception {
-        // Arrange
         SentimentRequestDTO request = new SentimentRequestDTO();
         request.setText("El servicio fue excelente");
 
@@ -48,7 +47,6 @@ class SentimentControllerTest {
         response.setPrediction("Positivo");
         response.setProbability(0.87);
 
-        // Act & Assert
         when(sentimentService.analyzeSentiment(any())).thenReturn(response);
 
         mockMvc.perform(post("/sentiment")
@@ -75,7 +73,6 @@ class SentimentControllerTest {
         SentimentRequestDTO request = new SentimentRequestDTO();
         request.setText("Texto válido");
 
-        // Simulamos la excepción personalizada
         when(sentimentService.analyzeSentiment(any()))
                 .thenThrow(new MlServiceException("ML error"));
 

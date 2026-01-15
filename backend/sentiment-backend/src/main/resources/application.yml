@@ -1,3 +1,6 @@
+# ============================================================
+# CONFIGURACIÓN PRINCIPAL DE SPRING BOOT
+# ============================================================
 server:
   port: 8080
 
@@ -5,13 +8,15 @@ spring:
   # ============================================================
   # CONFIGURACIÓN DE PERFILES
   # ============================================================
-  # El sistema soporta dos perfiles: 'local' (WAMP) y 'docker' (MySQL Docker)
-  # Por defecto se usa 'local' para desarrollo con WAMP
+  # Perfiles disponibles:
+  # - local: Desarrollo con MySQL WAMP (puerto 3306)
+  # - docker: Producción con MySQL Docker (puerto 3307 desde host)
+  # - test: Testing con H2 en memoria
   profiles:
-    active: local  # Perfil activo por defecto
+    active: local  # Perfil por defecto para desarrollo
 
   # ============================================================
-  # CONFIGURACIÓN DE BASE DE DATOS (COMÚN PARA AMBOS PERFILES)
+  # CONFIGURACIÓN DE JPA/HIBERNATE
   # ============================================================
   jpa:
     hibernate:
@@ -23,119 +28,100 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
 
   # ============================================================
-  # CONFIGURACIÓN DE FLYWAY (MIGRACIONES DE BASE DE DATOS)
+  # CONFIGURACIÓN DE FLYWAY (MIGRACIONES)
   # ============================================================
-  # Flyway maneja versiones de la base de datos
-  # 'repair: true' soluciona el problema de checksum mismatch
-  # 'validate-on-migrate: false' evita validación estricta en desarrollo
-
   flyway:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
-    repair: true  # Repara checksum mismatch automáticamente
-    out-of-order: true  # Permite migraciones fuera de orden
-    validate-on-migrate: false  # Desactiva validación durante migración
-    clean-on-validation-error: false  # No limpia base de datos en error
+    repair: true
+    out-of-order: true
+    validate-on-migrate: false
+    clean-on-validation-error: false
 
   # ============================================================
   # CONFIGURACIÓN DE INTERNACIONALIZACIÓN (I18N)
   # ============================================================
-  # Los archivos de mensajes están en src/main/resources/i18n/
-  # Formatos: messages.properties, messages_es.properties, etc.
-
+  # Los archivos messages.properties están en src/main/resources/i18n/
   messages:
-    basename: i18n/messages  # Ruta correcta para archivos de mensajes
+    basename: i18n/messages
     encoding: UTF-8
     fallback-to-system-locale: false
 
   # ============================================================
-  # CONFIGURACIÓN DE REDIS (CACHÉ DISTRIBUIDO)
+  # CONFIGURACIÓN DE REDIS (CACHÉ)
   # ============================================================
-  # Redis se usa para cachear traducciones frecuentes
-  # Mejora el rendimiento del servicio de traducción
-
   data:
     redis:
-      host: localhost  # Servicio Redis en Docker
-      port: 6379       # Puerto estándar de Redis
-      timeout: 2000ms  # Timeout de conexión
+      host: localhost
+      port: 6379
+      timeout: 2000ms
       lettuce:
         pool:
-          max-active: 8   # Conexiones máximas activas
-          max-idle: 8     # Conexiones máximas inactivas
-          min-idle: 0     # Conexiones mínimas inactivas
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 
   # ============================================================
   # CONFIGURACIÓN DEL SISTEMA DE CACHÉ
   # ============================================================
-  # Spring Cache se integra con Redis para almacenar traducciones
-
   cache:
     type: redis
     redis:
-      time-to-live: 3600000  # Las traducciones se cachean por 1 hora
-      cache-null-values: false  # No cachear valores nulos
-      key-prefix: "translation:"  # Prefijo para claves de caché
+      time-to-live: 3600000  # 1 hora en milisegundos
+      cache-null-values: false
+      key-prefix: "translation:"
       use-key-prefix: true
 
   # ============================================================
-  # CONFIGURACIÓN DE THREADS PARA TRADUCCIONES CONCURRENTES
+  # CONFIGURACIÓN DE THREADS (TRADUCCIÓN CONCURRENTE)
   # ============================================================
-  # Optimización para manejar múltiples solicitudes de traducción simultáneas
-
   task:
     execution:
       pool:
-        core-size: 10      # Núcleos de threads
-        max-size: 20       # Máximo de threads
-        queue-capacity: 100 # Capacidad de cola
+        core-size: 10
+        max-size: 20
+        queue-capacity: 100
 
 # ============================================================
 # CONFIGURACIÓN DE LOGGING
 # ============================================================
-
 logging:
   level:
-    org.hibernate.SQL: debug  # Log SQL de Hibernate
-    org.flywaydb.core: debug  # Log de Flyway
-    com.hackaton.sentiment.service: INFO  # Log de servicios
-    org.springframework.cache: INFO  # Log de cache
-    org.springframework.web: INFO    # Log de web
+    org.hibernate.SQL: debug
+    org.flywaydb.core: debug
+    com.hackaton.sentiment.service: INFO
+    com.hackaton.sentiment.client: INFO  # 👈 NUEVO: logs de LibreTranslate
+    org.springframework.cache: INFO
+    org.springframework.web: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
-    name: logs/sentiment-app.log  # Archivo de log
-    max-size: 10MB  # Tamaño máximo por archivo
+    name: logs/sentiment-app.log
+    max-size: 10MB
 
 # ============================================================
-# CONFIGURACIÓN DE LIBRETRANSLATE (SERVICIO DE TRADUCCIÓN)
+# CONFIGURACIÓN DE LIBRETRANSLATE (TRADUCCIÓN AUTOMÁTICA)
 # ============================================================
-# ⭐ CORREGIDO: La propiedad correcta es 'libretranslate.url'
-# LibreTranslate soporta más de 100 idiomas automáticamente
+# ⭐ ESTA ES LA CONFIGURACIÓN CLAVE PARA TU PROYECTO
 libretranslate:
-  url: http://localhost:5000  # URL del servicio LibreTranslate en Docker
-  enabled: true               # Habilitar servicio de traducción
-  cache-enabled: true        # Usar Redis para cachear traducciones
-  timeout: 10000             # Timeout de 10 segundos para traducciones
-  retry-count: 2             # Reintentos si falla la traducción
+  url: http://localhost:5000  # URL del servicio LibreTranslate
+  enabled: true               # Habilitar traducción automática
+  cache-enabled: true         # Usar Redis para cachear traducciones
+  timeout: 10000              # Timeout de 10 segundos
+  retry-count: 2              # Número de reintentos
 
 # ============================================================
 # CONFIGURACIÓN DEL MICROSERVICIO DE MACHINE LEARNING
 # ============================================================
-# Servicio del equipo de Data Science para análisis de sentimientos
-
 ml:
   service:
-    url: http://localhost:8000  # URL del servicio ML
-    timeout: 15000              # Timeout de 15 segundos para análisis
+    url: http://localhost:8000  # URL del servicio de Data Science
+    timeout: 15000              # Timeout de 15 segundos
 
 # ============================================================
-# CONFIGURACIÓN DE CORS (INTERACCIÓN CON FRONTEND)
+# CONFIGURACIÓN DE CORS (FRONTEND)
 # ============================================================
-# Permite que el frontend se comunique con el backend
-# Ajustar los orígenes según el puerto del frontend
-
 cors:
   allowed-origins: "http://localhost:3000,http://localhost:5173,http://localhost:8081"
   allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
@@ -143,50 +129,60 @@ cors:
   allow-credentials: true
 
 # ============================================================
-# SEPARADOR DE PERFILES - PERFIL 'local' (WAMP)
+# PERFIL: LOCAL (DESARROLLO CON WAMP)
 # ============================================================
-
 ---
 spring:
   config:
     activate:
-      on-profile: local  # Perfil para desarrollo con WAMP
-
-  # ============================================================
-  # CONFIGURACIÓN DE BASE DE DATOS PARA PERFIL 'local'
-  # ============================================================
-  # Conexión a MySQL WAMP en puerto 3306
-  # Usa variables de entorno con valores por defecto
+      on-profile: local
 
   datasource:
     url: jdbc:mysql://localhost:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
-    username: root     
-    password: ${DB_ADMIN0_1_PASSWORD} 
+    username: root
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: 10  # Pool de conexiones máximo
-      minimum-idle: 5        # Conexiones mínimas inactivas
+      maximum-pool-size: 10
+      minimum-idle: 5
 
 # ============================================================
-# SEPARADOR DE PERFILES - PERFIL 'docker'
+# PERFIL: DOCKER (PRODUCCIÓN CON DOCKER COMPOSE)
 # ============================================================
 ---
 spring:
   config:
     activate:
-      on-profile: docker  # Perfil para desarrollo con Docker
+      on-profile: docker
 
   # ============================================================
-  # CONFIGURACIÓN DE BASE DE DATOS PARA PERFIL 'docker'
+  # IMPORTANTE: En Docker, los servicios se comunican por nombre
+  # Ejemplo: "mysql" en lugar de "localhost"
   # ============================================================
-  # Conexión a MySQL Docker en puerto 3307
-  # Usa variables de entorno con valores por defecto
-
   datasource:
-    url: jdbc:mysql://localhost:3307/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
-    username: root      '
-    password: ${DB_ADMIN0_1_PASSWORD}
+    url: jdbc:mysql://mysql:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: root
+    password: ${SPRING_DATASOURCE_PASSWORD}  # 👈 Variable de entorno
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: 10  # Pool de conexiones máximo
-      minimum-idle: 5        # Conexiones mínimas inactivas
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  # Redis en Docker
+  data:
+    redis:
+      host: redis  # 👈 Nombre del servicio en docker-compose
+      port: 6379
+
+# LibreTranslate en Docker
+libretranslate:
+  url: ${LIBRETRANSLATE_URL:http://libretranslate:5000}  # 👈 Variable de entorno con fallback
+
+# ML Service en Docker
+ml:
+  service:
+    url: ${ML_SERVICE_URL:http://datascience:8000}  # 👈 Variable de entorno con fallback
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}

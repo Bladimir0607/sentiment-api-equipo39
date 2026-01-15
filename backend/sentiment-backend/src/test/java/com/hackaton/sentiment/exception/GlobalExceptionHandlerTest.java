@@ -1,6 +1,6 @@
 package com.hackaton.sentiment.exception;
 
-import com.hackaton.sentiment.service.SimpleTranslationService;
+import com.hackaton.sentiment.service.TranslationService; // 👈 CAMBIO
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -14,7 +14,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldHandleMlServiceException() {
-        SimpleTranslationService translationService = mock(SimpleTranslationService.class);
+        TranslationService translationService = mock(TranslationService.class); // 👈 CAMBIO
         GlobalExceptionHandler handler = new GlobalExceptionHandler(translationService);
 
         HttpServletRequest request = mock(HttpServletRequest.class);

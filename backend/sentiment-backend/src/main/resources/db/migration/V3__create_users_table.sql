@@ -1,4 +1,4 @@
--- V3_create_users_table.sql
+-- V3__create_users_table.sql
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,

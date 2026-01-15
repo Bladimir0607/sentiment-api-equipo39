@@ -1,0 +1,18 @@
+# Java
+target/
+*.log
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Env / secrets
+.env
+*.env
+
+# Docker
+docker-compose.override.yml

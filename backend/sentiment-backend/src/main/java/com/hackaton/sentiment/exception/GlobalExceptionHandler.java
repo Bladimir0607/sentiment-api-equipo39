@@ -1,6 +1,6 @@
 package com.hackaton.sentiment.exception;
 
-import com.hackaton.sentiment.service.SimpleTranslationService;
+import com.hackaton.sentiment.service.TranslationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,7 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
-    private final SimpleTranslationService translationService;
+    private final TranslationService translationService;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationException(
@@ -54,7 +54,6 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    // 🔥 Método centralizado para traducción segura
     private String translateIfNeeded(String message, HttpServletRequest request) {
         String acceptLanguage = request.getHeader("Accept-Language");
 
@@ -65,7 +64,6 @@ public class GlobalExceptionHandler {
         try {
             return translationService.translate(message, acceptLanguage);
         } catch (Exception e) {
-            // fallback seguro
             return message;
         }
     }

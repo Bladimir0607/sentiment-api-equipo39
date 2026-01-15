@@ -1,6 +1,6 @@
 package com.hackaton.sentiment.controller;
 
-import com.hackaton.sentiment.service.SimpleTranslationService; // Importante
+import com.hackaton.sentiment.service.TranslationService; // 👈 CAMBIO
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -17,8 +17,8 @@ class HealthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean // Esto le da al GlobalExceptionHandler lo que necesita
-    private SimpleTranslationService translationService;
+    @MockitoBean // 👈 CAMBIO
+    private TranslationService translationService;
 
     @Test
     void health_shouldReturnOk() throws Exception {

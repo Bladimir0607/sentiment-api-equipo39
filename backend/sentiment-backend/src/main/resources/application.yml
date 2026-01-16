@@ -186,6 +186,3 @@ ml:
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
-
-#JWT_SECRET: 8jLc0f8Tz/b3CEIIu5u5o7W6KbFc3cWWnmlQMULdSqA=
-#JWT_EXPIRATION: 86400000

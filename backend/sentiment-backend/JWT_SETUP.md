@@ -1,4 +1,4 @@
-🛠️ Cómo configurarlo en IntelliJ (OBLIGATORIO)
+🛠️ Cómo configurar el JWT en IntelliJ (OBLIGATORIO)
 
 Run → Edit Configurations
 

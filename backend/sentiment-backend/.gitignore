@@ -1,33 +1,69 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# =========================
+# Archivos de sistema
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# =========================
+# Logs y temporales
+# =========================
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# =========================
+# Compilación / IDE
+# =========================
+/target/
+/out/
+/bin/
+*.class
+*.jar
+*.war
 *.iml
+.idea/
 *.ipr
+*.iws
+*.classpath
+*.project
+*.settings/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+# =========================
+# Configuración sensible
+# =========================
+.env
+*.key
+*.pem
+*.p12
+*.jks
 
-### VS Code ###
-.vscode/
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
+Dockerfile.old
+*.env
+
+# =========================
+# Base de datos / cache
+# =========================
+*.h2.db
+*.sqlite
+*.db
+*.redis
+
+# =========================
+# Pruebas
+# =========================
+/test-output/
+/surefire-reports/
+*.log
+
+# =========================
+# Misc
+# =========================
+*.bak
+*.orig

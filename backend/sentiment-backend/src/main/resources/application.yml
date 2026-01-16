@@ -48,6 +48,7 @@ spring:
     encoding: UTF-8
     fallback-to-system-locale: false
 
+
   # ============================================================
   # CONFIGURACIÓN DE REDIS (CACHÉ)
   # ============================================================
@@ -98,7 +99,6 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
     name: logs/sentiment-app.log
-    max-size: 10MB
 
 # ============================================================
 # CONFIGURACIÓN DE LIBRETRANSLATE (TRADUCCIÓN AUTOMÁTICA)
@@ -140,7 +140,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: root
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    password: B$b0607052122        #${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -162,7 +162,7 @@ spring:
   datasource:
     url: jdbc:mysql://mysql:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: root
-    password: ${SPRING_DATASOURCE_PASSWORD}  # 👈 Variable de entorno
+    password: B$b0607052122      #${SPRING_DATASOURCE_PASSWORD}  # 👈 Variable de entorno
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -186,3 +186,6 @@ ml:
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
+
+#JWT_SECRET: 8jLc0f8Tz/b3CEIIu5u5o7W6KbFc3cWWnmlQMULdSqA=
+#JWT_EXPIRATION: 86400000

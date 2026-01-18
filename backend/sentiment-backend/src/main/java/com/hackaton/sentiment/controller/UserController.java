@@ -58,7 +58,11 @@ public class UserController {
             return authentication.getName();
         }
     }
-    @Operation(summary = "Obtener perfil del usuario actual")
+    @Operation(
+            summary = "Obtener perfil del usuario autenticado",
+            description = "Retorna la información completa del perfil del usuario que ha iniciado sesión," +
+                    " incluyendo sus datos personales registrados en la plataforma."
+    )
     @GetMapping("/me")
     public ResponseEntity<UserProfileDTO> getCurrentUser() {
         String username = getCurrentUsername();
@@ -75,7 +79,11 @@ public class UserController {
                 .build());
     }
 
-    @Operation(summary = "Actualizar perfil del usuario")
+    @Operation(
+            summary = "Actualizar perfil del usuario",
+            description = "Permite al usuario autenticado modificar su información personal almacenada en la plataforma," +
+                    " como nombre, correo electrónico u otros datos de perfil."
+    )
     @PutMapping("/me")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateProfileRequestDTO request) {
         String username = getCurrentUsername();
@@ -97,7 +105,11 @@ public class UserController {
         return ResponseEntity.ok("Perfil actualizado correctamente");
     }
 
-    @Operation(summary = "Cambiar contraseña")
+    @Operation(
+            summary = "Cambiar contraseña del usuario",
+            description = "Permite al usuario autenticado actualizar su contraseña actual por una nueva," +
+                    " garantizando la seguridad de su cuenta."
+    )
     @PostMapping("/me/change-password")
     public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequestDTO request) {
         String username = getCurrentUsername();
@@ -117,7 +129,10 @@ public class UserController {
         return ResponseEntity.ok("Contraseña cambiada exitosamente");
     }
 
-    @Operation(summary = "Eliminar cuenta propia")
+    @Operation(
+            summary = "Eliminar cuenta propia",
+            description = "Elimina permanentemente la cuenta del usuario autenticado junto con su información asociada en el sistema."
+    )
     @DeleteMapping("/me")
     public ResponseEntity<?> deleteAccount() {
         String username = getCurrentUsername();
@@ -133,36 +148,40 @@ public class UserController {
         return ResponseEntity.ok("Cuenta eliminada exitosamente");
     }
 
-    @GetMapping("/{userId}/analyses")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getUserAnalyses(@PathVariable Long userId) {
-
-        log.info("🔍 ADMIN: Solicitando análisis del usuario ID: {}", userId);
-
-        // Verificar que el usuario existe
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        List<SentimentAnalysis> analyses = sentimentService.getUserAnalyses(userId);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("userId", userId);
-        response.put("username", user.getUsername());
-        response.put("totalAnalyses", analyses.size());
-        response.put("analyses", analyses.stream()
-                .map(analysis -> Map.of(
-                        "id", analysis.getId(),
-                        "text", analysis.getText().length() > 50 ?
-                                analysis.getText().substring(0, 50) + "..." : analysis.getText(),
-                        "sentiment", analysis.getLabel(),
-                        "probability", analysis.getProbability(),
-                        "createdAt", analysis.getCreatedAt()
-                ))
-                .collect(Collectors.toList()));
-
-        log.info("ADMIN: Encontrados {} análisis para el usuario {}",
-                analyses.size(), user.getUsername());
-
-        return ResponseEntity.ok(response);
-    }
+//    @Operation(
+//            summary = "Obtener análisis de sentimiento de un usuario",
+//            description = "Retorna el historial de análisis de sentimiento realizados por un usuario específico, identificado por su ID. Este endpoint es útil para consultas administrativas o análisis de comportamiento."
+//    )
+//    @GetMapping("/{userId}/analyses")
+//    @PreAuthorize("hasRole('ADMIN')")
+//    public ResponseEntity<?> getUserAnalyses(@PathVariable Long userId) {
+//
+//        log.info("🔍 ADMIN: Solicitando análisis del usuario ID: {}", userId);
+//
+//        // Verificar que el usuario existe
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+//
+//        List<SentimentAnalysis> analyses = sentimentService.getUserAnalyses(userId);
+//
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("userId", userId);
+//        response.put("username", user.getUsername());
+//        response.put("totalAnalyses", analyses.size());
+//        response.put("analyses", analyses.stream()
+//                .map(analysis -> Map.of(
+//                        "id", analysis.getId(),
+//                        "text", analysis.getText().length() > 50 ?
+//                                analysis.getText().substring(0, 50) + "..." : analysis.getText(),
+//                        "sentiment", analysis.getLabel(),
+//                        "probability", analysis.getProbability(),
+//                        "createdAt", analysis.getCreatedAt()
+//                ))
+//                .collect(Collectors.toList()));
+//
+//        log.info("ADMIN: Encontrados {} análisis para el usuario {}",
+//                analyses.size(), user.getUsername());
+//
+//        return ResponseEntity.ok(response);
+//    }
 }

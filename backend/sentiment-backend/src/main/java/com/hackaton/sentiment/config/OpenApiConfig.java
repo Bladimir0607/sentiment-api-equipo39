@@ -23,7 +23,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Sentiment Analysis API")
                         .version("1.0.0")
-                        .description("API para análisis de sentimiento de textos. Integra un microservicio de Machine Learning para clasificar comentarios como Positivo, Negativo o Neutro."))
+                        .description("API para análisis de sentimiento de textos. Integra un microservicio de Machine Learning para clasificar comentarios como Positivo o Negativo "))
                 .addSecurityItem(new SecurityRequirement()
                         .addList("Bearer Authentication"));
     }

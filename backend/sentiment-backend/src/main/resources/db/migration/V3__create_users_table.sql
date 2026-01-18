@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insertar usuario admin por defecto (password: admin123)
-INSERT INTO users (username, email, password, full_name, role) VALUES
-('admin', 'admin@hackaton.com', '$2a$10$X7H8O5nzL9KjM2N1B3V4C6D7E8F9G0H1I2J3K4L5M6N7O8P9Q0R1S2T3U4V5W', 'Administrador', 'ADMIN'),
-('user1', 'user1@hackaton.com', '$2a$10$X7H8O5nzL9KjM2N1B3V4C6D7E8F9G0H1I2J3K4L5M6N7O8P9Q0R1S2T3U4V5W', 'Usuario Uno', 'USER')
+INSERT INTO users (username, email, password, full_name, role, enabled) VALUES
+('admin', 'admin@hackaton.com', '$2a$10$X7H8O5nzL9KjM2N1B3V4C6D7E8F9G0H1I2J3K4L5M6N7O8P9Q0R1S2T3U4V5W', 'Administrador', 'ADMIN', TRUE),
+('user1', 'user1@hackaton.com', '$2a$10$X7H8O5nzL9KjM2N1B3V4C6D7E8F9G0H1I2J3K4L5M6N7O8P9Q0R1S2T3U4V5W', 'Usuario Uno', 'USER', TRUE)
 ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP;

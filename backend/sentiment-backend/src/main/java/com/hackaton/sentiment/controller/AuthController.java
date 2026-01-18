@@ -10,6 +10,7 @@ import com.hackaton.sentiment.dto.response.AuthResponseDTO;
 import com.hackaton.sentiment.service.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +26,18 @@ import java.util.Map;
 @RequestMapping("/auth")
 @SecurityRequirement(name = "Bearer Authentication")//linea agregada para el candado en swager
 @RequiredArgsConstructor
+@Tag(name = "Autentificacion", description = "Endpoints de autentificacion")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+
+    @Operation(
+            summary = "Iniciar sesión",
+            description = "Autentica al usuario mediante sus credenciales y genera un token JWT que permitirá el acceso seguro a los recursos protegidos de la API."
+    )
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequestDTO request) {
@@ -56,6 +63,12 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
     }
+
+    @Operation(
+            summary = "Registrar nuevo usuario",
+            description = "Crea una nueva cuenta de usuario en la plataforma utilizando los datos de registro proporcionados. " +
+                    "Al completarse correctamente, el usuario podrá iniciar sesión en el sistema."
+    )
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequestDTO request) {
@@ -94,6 +107,11 @@ public class AuthController {
         }
     }
 
+    @Operation(
+            summary = "Obtener usuario autenticado",
+            description = "Retorna la información básica del usuario actualmente autenticado, " +
+                    "obtenida a partir del token JWT enviado en la solicitud."
+    )
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
         try {
@@ -117,7 +135,12 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid token");
         }
     }
-    @Operation(summary = "Refrescar token JWT")
+
+    @Operation(
+            summary = "Refrescar token JWT",
+            description = "Genera un nuevo token de acceso a partir de un token de actualización válido, " +
+                    "permitiendo mantener la sesión activa sin necesidad de volver a iniciar sesión."
+    )
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authHeader) {
         try {
@@ -138,14 +161,22 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Cambiar contraseña (sin estar logueado - recuperación)")
+    @Operation(
+            summary = "Recuperar contraseña",
+            description = "Permite restablecer la contraseña de un usuario que no ha iniciado sesión, " +
+                    "validando su identidad mediante los datos proporcionados y generando una nueva credencial segura."
+    )
+
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         // Lógica para enviar email con link de recuperación
         return ResponseEntity.ok("Si el email existe, recibirás instrucciones");
     }
 
-    @Operation(summary = "Validar token JWT")
+    @Operation(
+            summary = "Validar token JWT",
+            description = "Verifica si un token JWT es válido, no ha expirado y pertenece a un usuario autorizado para acceder a la API."
+    )
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
         try {

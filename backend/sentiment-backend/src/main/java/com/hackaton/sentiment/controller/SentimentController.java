@@ -41,6 +41,13 @@ public class SentimentController {
         return sentimentService.analyzeSentiment(request);
     }
 
+    @Operation(
+            summary = "Obtener estadísticas globales de sentimiento",
+            description = "Retorna métricas agregadas de todos los análisis de sentimiento registrados en la plataforma, incluyendo totales de comentarios positivos y negativos. " +
+                    "Esta información es útil para obtener una visión general del comportamiento emocional de los usuarios."
+    )
+
+
     @GetMapping("/stats")
     public SentimentStatsResponseDTO stats() {
         return sentimentService.getStats();

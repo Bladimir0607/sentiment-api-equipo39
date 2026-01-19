@@ -73,3 +73,4 @@ Dockerfile.old
 # =========================
 *.bak
 *.orig
+.idea/

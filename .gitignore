@@ -6,4 +6,4 @@ __pycache__/
 .venv/
 
 # Jupyter
-.ipynb_checkpoints/
+.ipynb_checkpoints/.idea/

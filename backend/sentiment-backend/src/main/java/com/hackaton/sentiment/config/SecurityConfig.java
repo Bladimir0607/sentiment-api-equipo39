@@ -61,7 +61,7 @@ public class SecurityConfig {
     }
 
     /**
-     * ✅ Spring Security 6:
+     *  Spring Security 6:
      * UserDetailsService SE PASA POR CONSTRUCTOR
      */
     @Bean

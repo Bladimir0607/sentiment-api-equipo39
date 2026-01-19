@@ -10,5 +10,6 @@ public class SentimentStatsResponseDTO {
     private Long total;
     private Long positive;
     private Long negative;
-    private Long neutral;
+    //private Long neutral;
+
 }

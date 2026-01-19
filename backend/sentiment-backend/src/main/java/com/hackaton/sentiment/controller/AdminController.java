@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -157,5 +158,40 @@ public class AdminController {
                 "message", "Usuario eliminado exitosamente",
                 "deletedUserId", userId
         ));
+    }
+
+    @Operation(
+            summary = "Obtener análisis de sentimiento de un usuario (Administrador)",
+            description = "Permite a un administrador consultar el historial de análisis de sentimiento de cualquier usuario del sistema con fines de auditoría y análisis global."
+    )
+    @GetMapping("/users/{userId}/analyses")
+    public ResponseEntity<?> getUserAnalyses(@PathVariable Long userId) {
+
+        log.info("🔍 ADMIN: Solicitando análisis del usuario ID: {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        List<SentimentAnalysis> analyses = sentimentService.getUserAnalyses(userId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", userId);
+        response.put("username", user.getUsername());
+        response.put("totalAnalyses", analyses.size());
+        response.put("analyses", analyses.stream()
+                .map(analysis -> Map.of(
+                        "id", analysis.getId(),
+                        "text", analysis.getText().length() > 50 ?
+                                analysis.getText().substring(0, 50) + "..." : analysis.getText(),
+                        "sentiment", analysis.getLabel(),
+                        "probability", analysis.getProbability(),
+                        "createdAt", analysis.getCreatedAt()
+                ))
+                .collect(Collectors.toList()));
+
+        log.info("ADMIN: Encontrados {} análisis para el usuario {}",
+                analyses.size(), user.getUsername());
+
+        return ResponseEntity.ok(response);
     }
 }

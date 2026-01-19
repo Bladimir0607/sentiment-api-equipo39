@@ -88,7 +88,6 @@ class SentimentControllerTest {
                 .total(10L)
                 .positive(5L)
                 .negative(3L)
-                .neutral(2L)
                 .build();
 
         when(sentimentService.getStats()).thenReturn(stats);

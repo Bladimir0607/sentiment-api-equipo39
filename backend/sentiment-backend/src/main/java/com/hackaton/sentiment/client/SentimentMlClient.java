@@ -25,7 +25,7 @@ public class SentimentMlClient {
             log.info("Enviando texto al microservicio ML");
 
             return restClient.post()
-                    .uri("/sentiment")
+                    .uri("/sentiment-explain")
                     .body(Map.of("text", text))
                     .retrieve()
                     .body(SentimentResponseDTO.class);

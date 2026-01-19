@@ -96,13 +96,11 @@ class SentimentServiceImplTest {
         when(repository.count()).thenReturn(10L);
         when(repository.countByLabel(SentimentLabels.POSITIVE)).thenReturn(4L);
         when(repository.countByLabel(SentimentLabels.NEGATIVE)).thenReturn(3L);
-        when(repository.countByLabel(SentimentLabels.NEUTRAL)).thenReturn(3L);
 
         var stats = service.getStats();
 
         assertThat(stats.getTotal()).isEqualTo(10);
         assertThat(stats.getPositive()).isEqualTo(4);
         assertThat(stats.getNegative()).isEqualTo(3);
-        assertThat(stats.getNeutral()).isEqualTo(3);
     }
 }

@@ -56,13 +56,13 @@ public class I18nController {
      * El frontend debe usar este endpoint para todos los textos.
      *
      * ESTRATEGIA DE TRADUCCIÓN:
-     * 1. Busca en archivos .properties
+     * 1. Busca en archivos.properties
      * 2. Busca en base de datos
      * 3. Traduce con LibreTranslate (IA)
      * 4. Fallback a inglés o texto original
      *
      * EJEMPLO DE USO:
-     * GET /api/i18n/translate?key=error.text.required&lang=en
+     * GET /api/i18n/translate?Key=error.text.required&lang=en
      *
      * RESPUESTA:
      * {
@@ -311,7 +311,7 @@ public class I18nController {
      * Header: Accept-Language: pt
      *
      * RESPUESTA:
-     * "Análise de sentimento concluída"
+     * "Análise de sentimiento concluída"
      *
      * EJEMPLO DE USO CON CURL:
      * curl -H "Accept-Language: en" http://localhost:8080/api/i18n/hello

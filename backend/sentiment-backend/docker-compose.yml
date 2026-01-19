@@ -220,7 +220,7 @@ services:
 #  datascience:
 #    # Construir imagen desde Dockerfile del equipo de Data Science
 #    build:
-#      context: ./datascience  # Carpeta del proyecto de Data Science
+#      context: ./datascience # Carpeta del proyecto de Data Science
 #      dockerfile: Dockerfile
 #
 #    container_name: sentiment-datascience
@@ -231,7 +231,7 @@ services:
 #
 #    # Variables de entorno (si el equipo de DS las necesita)
 #    # environment:
-#    #   MODEL_PATH: /app/models/sentiment_model.pkl
+#    #   MODEL_PATH: /app/models/sentiment_model_1.3.joblib
 #
 #    restart: unless-stopped
 #

@@ -21,6 +21,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * Controlador de autenticación y gestión de usuarios.
+ *
+ * Proporciona endpoints para el registro, inicio de sesión, gestión de tokens JWT
+ * y operaciones relacionadas con la autenticación de usuarios en el sistema.
+ *
+ * Todos los endpoints están disponibles sin autenticación excepto aquellos que
+ * requieren un token válido para acceder a información del usuario actual.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/auth")
@@ -34,11 +43,19 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Autentica a un usuario y genera un token JWT de acceso.
+     *
+     * Verifica las credenciales del usuario (username y password) y, si son válidas,
+     * genera un token JWT que puede ser utilizado para acceder a endpoints protegidos.
+     *
+     * @param request DTO con las credenciales de autenticación
+     * @return ResponseEntity con el token JWT y datos del usuario o mensaje de error
+     */
     @Operation(
             summary = "Iniciar sesión",
             description = "Autentica al usuario mediante sus credenciales y genera un token JWT que permitirá el acceso seguro a los recursos protegidos de la API."
     )
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequestDTO request) {
         try {
@@ -64,6 +81,16 @@ public class AuthController {
         }
     }
 
+    /**
+     * Registra un nuevo usuario en el sistema.
+     *
+     * Crea una nueva cuenta de usuario con rol USER por defecto. Valida que el
+     * username y email no estén previamente registrados. Retorna un token JWT
+     * inmediatamente después del registro exitoso.
+     *
+     * @param request DTO con los datos de registro del usuario
+     * @return ResponseEntity con el token JWT y datos del usuario o mensaje de error
+     */
     @Operation(
             summary = "Registrar nuevo usuario",
             description = "Crea una nueva cuenta de usuario en la plataforma utilizando los datos de registro proporcionados. " +
@@ -107,6 +134,15 @@ public class AuthController {
         }
     }
 
+    /**
+     * Obtiene la información del usuario actualmente autenticado.
+     *
+     * Extrae el token JWT del encabezado Authorization y retorna los datos
+     * del perfil del usuario sin incluir información sensible como la contraseña.
+     *
+     * @param authHeader Encabezado Authorization con el token Bearer
+     * @return ResponseEntity con los datos del perfil del usuario o mensaje de error
+     */
     @Operation(
             summary = "Obtener usuario autenticado",
             description = "Retorna la información básica del usuario actualmente autenticado, " +
@@ -136,6 +172,15 @@ public class AuthController {
         }
     }
 
+    /**
+     * Genera un nuevo token de acceso a partir de un token de actualización.
+     *
+     * Permite renovar el token de acceso sin requerir nuevas credenciales,
+     * manteniendo la sesión activa. Valida que el token de actualización no haya expirado.
+     *
+     * @param authHeader Encabezado Authorization con el token de actualización
+     * @return ResponseEntity con el nuevo token JWT o mensaje de error
+     */
     @Operation(
             summary = "Refrescar token JWT",
             description = "Genera un nuevo token de acceso a partir de un token de actualización válido, " +
@@ -161,18 +206,36 @@ public class AuthController {
         }
     }
 
+    /**
+     * Inicia el proceso de recuperación de contraseña.
+     *
+     * Endpoint inicial para el proceso de recuperación de contraseña.
+     * En una implementación completa, enviaría un email con instrucciones
+     * para restablecer la contraseña.
+     *
+     * @param email Email del usuario que desea recuperar la contraseña
+     * @return ResponseEntity con mensaje informativo
+     */
     @Operation(
             summary = "Recuperar contraseña",
             description = "Permite restablecer la contraseña de un usuario que no ha iniciado sesión, " +
                     "validando su identidad mediante los datos proporcionados y generando una nueva credencial segura."
     )
-
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         // Lógica para enviar email con link de recuperación
         return ResponseEntity.ok("Si el email existe, recibirás instrucciones");
     }
 
+    /**
+     * Valida la vigencia y autenticidad de un token JWT.
+     *
+     * Verifica si el token proporcionado es válido, no ha expirado
+     * y pertenece a un usuario autorizado en el sistema.
+     *
+     * @param authHeader Encabezado Authorization con el token a validar
+     * @return ResponseEntity con el resultado de la validación
+     */
     @Operation(
             summary = "Validar token JWT",
             description = "Verifica si un token JWT es válido, no ha expirado y pertenece a un usuario autorizado para acceder a la API."

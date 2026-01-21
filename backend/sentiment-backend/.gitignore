@@ -73,3 +73,9 @@ Dockerfile.old
 # =========================
 *.bak
 *.orig
+.idea/
+.idea/
+.idea/
+
+# JavaDoc generado
+target/site/apidocs/

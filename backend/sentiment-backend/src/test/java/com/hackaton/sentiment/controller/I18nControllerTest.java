@@ -15,6 +15,12 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Pruebas unitarias para I18nController.
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
+ */
 @WebMvcTest(I18nController.class)
 class I18nControllerTest {
 
@@ -27,6 +33,11 @@ class I18nControllerTest {
     @MockitoBean
     private LibreTranslateClient libreTranslateClient;
 
+    /**
+     * Prueba que getTranslation retorna un mensaje traducido.
+     *
+     * @throws Exception sí ocurre un error durante la prueba
+     */
     @Test
     void getTranslation_shouldReturnTranslatedMessage() throws Exception {
         when(translationService.translate(any(), any()))
@@ -40,6 +51,11 @@ class I18nControllerTest {
                 .andExpect(jsonPath("$.success").value("true"));
     }
 
+    /**
+     * Prueba que getAllTranslations retorna un mapa de traducciones.
+     *
+     * @throws Exception sí ocurre un error durante la prueba
+     */
     @Test
     void getAllTranslations_shouldReturnMap() throws Exception {
         when(translationService.getAllTranslationsForLanguage("es"))
@@ -50,6 +66,11 @@ class I18nControllerTest {
                 .andExpect(jsonPath("$.['error.text.required']").value("El texto no puede estar vacío"));
     }
 
+    /**
+     * Prueba que sayHello retorna un mensaje traducido.
+     *
+     * @throws Exception sí ocurre un error durante la prueba
+     */
     @Test
     void sayHello_shouldReturnTranslatedMessage() throws Exception {
         when(translationService.translate(any(), any()))

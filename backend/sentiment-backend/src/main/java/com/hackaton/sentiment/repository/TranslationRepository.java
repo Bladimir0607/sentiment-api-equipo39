@@ -8,65 +8,62 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio para gestionar traducciones dinámicas.
+ * Repositorio para la gestión de entidades {@link Translation} (traducciones dinámicas).
+ * Extiende {@link JpaRepository} proporcionando operaciones CRUD básicas y métodos de consulta personalizados.
  *
- * MÉTODOS DISPONIBLES:
- * - findByLanguageCode: Obtiene todas las traducciones de un idioma
- * - findByKeyAndLanguageCode: Busca traducción específica
- * - findByModuleAndLanguageCode: Agrupa por módulo (frontend, backend, etc.)
- * - existsByKeyAndLanguageCode: Verifica si existe traducción
- *
- * USADO POR: TranslationService.java
+ * <p>Este repositorio se utiliza principalmente por TranslationService
+ * para operaciones relacionadas con la carga, búsqueda y verificación de traducciones en diferentes idiomas.</p>
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
  */
 @Repository
 public interface TranslationRepository extends JpaRepository<Translation, Long> {
 
     /**
-     * Encuentra todas las traducciones para un idioma específico.
-     * Usado por: TranslationService.getAllTranslationsForLanguage()
+     * Recupera todas las traducciones disponibles para un código de idioma específico.
      *
-     * @param languageCode Código de idioma (es, en, pt)
-     * @return Lista de traducciones
+     * @param languageCode el código del idioma (ej: "es", "en", "pt") - no debe ser {@code null}
+     * @return una lista de {@link Translation} para el idioma especificado, puede estar vacía si no hay traducciones
      */
     List<Translation> findByLanguageCode(String languageCode);
 
     /**
-     * Busca una traducción específica por clave e idioma.
-     * Usado por: TranslationService.tryDatabase()
+     * Busca una traducción específica utilizando su clave única y el código de idioma.
      *
-     * @param key Clave de traducción (ej: "error.text.required")
-     * @param languageCode Código de idioma (es, en, pt)
-     * @return Optional con la traducción si existe
+     * @param key la clave de la traducción (ej: "error.text.required") - no debe ser {@code null}
+     * @param languageCode el código del idioma (ej: "es", "en", "pt") - no debe ser {@code null}
+     * @return un {@link Optional} que contiene la {@link Translation} si existe, o {@link Optional#empty()} si no
      */
     Optional<Translation> findByKeyAndLanguageCode(String key, String languageCode);
 
     /**
-     * Encuentra traducciones por módulo e idioma.
-     * Útil para cargar traducciones del frontend por separado.
+     * Recupera todas las traducciones pertenecientes a un módulo específico y código de idioma.
+     * Útil para cargar traducciones agrupadas por módulo (frontend, backend, errores, etc.).
      *
-     * @param module Módulo (frontend, backend, errors, etc.)
-     * @param languageCode Código de idioma
-     * @return Lista de traducciones del módulo
+     * @param module el módulo al que pertenecen las traducciones (ej: "frontend", "backend", "errors") - no debe ser {@code null}
+     * @param languageCode el código del idioma (ej: "es", "en", "pt") - no debe ser {@code null}
+     * @return una lista de {@link Translation} del módulo especificado, puede estar vacía si no hay traducciones
      */
     List<Translation> findByModuleAndLanguageCode(String module, String languageCode);
 
     /**
-     * Verifica si existe una traducción sin cargarla.
-     * Usado por: TranslationService.saveTranslationToDatabase()
+     * Verifica si existe una traducción para una clave y código de idioma específicos.
+     * Este método es más eficiente que cargar la entidad completa cuando solo se necesita verificar existencia.
      *
-     * @param key Clave de traducción
-     * @param languageCode Código de idioma
-     * @return true si existe, false si no
+     * @param key la clave de la traducción (ej: "error.text.required") - no debe ser {@code null}
+     * @param languageCode el código del idioma (ej: "es", "en", "pt") - no debe ser {@code null}
+     * @return {@code true} si existe una traducción con la clave e idioma especificados, {@code false} en caso contrario
      */
     boolean existsByKeyAndLanguageCode(String key, String languageCode);
 
     /**
-     * MÉTODO ADICIONAL (OPCIONAL): Buscar traducciones por patrón de clave.
-     * Útil para búsquedas como "error.*" o "button.*"
+     * Busca traducciones cuyas claves comiencen con un patrón específico y que correspondan a un código de idioma.
+     * Útil para búsquedas agrupadas como "error.*" o "button.*".
      *
-     * @param keyPattern Patrón de búsqueda (ej: "button%")
-     * @param languageCode Código de idioma
-     * @return Lista de traducciones que coinciden
+     * @param keyPattern el patrón de búsqueda para las claves (ej: "button%", "error.%") - no debe ser {@code null}
+     * @param languageCode el código del idioma (ej: "es", "en", "pt") - no debe ser {@code null}
+     * @return una lista de {@link Translation} que coinciden con el patrón, puede estar vacía si no hay coincidencias
      */
     List<Translation> findByKeyStartingWithAndLanguageCode(String keyPattern, String languageCode);
 }

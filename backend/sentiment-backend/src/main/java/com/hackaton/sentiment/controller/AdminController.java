@@ -20,6 +20,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Controlador REST para operaciones administrativas del sistema.
+ *
+ * Este controlador proporciona endpoints exclusivos para usuarios con rol de administrador,
+ * permitiendo la gestión de usuarios, consulta de estadísticas y auditoría de análisis de sentimientos.
+ *
+ * Todos los endpoints requieren autenticación JWT y el rol ADMIN para su acceso.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/admin")
@@ -31,6 +39,14 @@ public class AdminController {
     private final UserRepository userRepository;
     private final SentimentService sentimentService;
 
+    /**
+     * Obtiene la lista completa de usuarios registrados en el sistema.
+     *
+     * Este endpoint retorna información básica de todos los usuarios incluyendo:
+     * ID, nombre de usuario, email, rol y fechas de creación/actualización.
+     *
+     * @return ResponseEntity con lista de {@link UserResponseDTO} y estado HTTP 200
+     */
     @Operation(
             summary = "Obtener todos los usuarios",
             description = "Solo accesible para usuarios con rol ADMIN"
@@ -57,6 +73,20 @@ public class AdminController {
         return ResponseEntity.ok(userDTOs);
     }
 
+
+    /**
+     * Obtiene estadísticas generales sobre los usuarios del sistema.
+     *
+     * Las estadísticas incluyen:
+     *
+     *   1. Total de usuarios registrados.
+     *   2. Cantidad de administradores.
+     *   3. Cantidad de usuarios normales.
+     *   4. Porcentaje de administradores.
+     *   5. Timestamp de la consulta.
+     *
+     * @return ResponseEntity con mapa de estadísticas y estado HTTP 200
+     */
     @Operation(
             summary = "Obtener estadísticas de usuarios",
             description = "Estadísticas solo visibles para administradores"
@@ -82,6 +112,14 @@ public class AdminController {
         return ResponseEntity.ok(stats);
     }
 
+    /**
+     * Obtiene todos los análisis de sentimiento realizados por todos los usuarios.
+     *
+     * Cada análisis incluye información completa del análisis y datos básicos
+     * del usuario que lo realizó, permitiendo auditoría completa del sistema.
+     *
+     * @return ResponseEntity con lista de análisis detallados y estado HTTP 200
+     */
     // ADMIN - ver todos los análisis
     @Operation(
             summary = "Ver todos los análisis",
@@ -113,6 +151,15 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Obtiene estadísticas avanzadas del sistema.
+     *
+     * Delega la obtención de estadísticas detalladas al servicio de sentimientos,
+     * que puede incluir métricas como análisis por fecha, distribución de sentimientos,
+     * actividad de usuarios, entre otros.
+     *
+     * @return ResponseEntity con estadísticas avanzadas y estado HTTP 200
+     */
     //ADMIN - estadísticas avanzadas
     @Operation(
             summary = "Estadísticas avanzadas",
@@ -124,7 +171,19 @@ public class AdminController {
         return ResponseEntity.ok(sentimentService.getAdvancedStats());
     }
 
-    //ADMIN - eliminar usuario
+    /**
+     * Elimina un usuario del sistema por su ID.
+     *
+     * Validaciones realizadas:
+     *
+     *   1. El usuario debe existir.
+     *   2. El administrador no puede eliminarse a sí mismo.
+     *
+     * @param userId ID del usuario a eliminar
+     * @return ResponseEntity con mensaje de confirmación o error
+     *
+     * @throws RuntimeException si el usuario actual no se encuentra en el sistema
+     */
     @Operation(
             summary = "Eliminar usuario",
             description = "Elimina un usuario por ID (solo ADMIN)"
@@ -160,6 +219,17 @@ public class AdminController {
         ));
     }
 
+    /**
+     * Obtiene el historial completo de análisis de sentimiento de un usuario específico.
+     *
+     * Este endpoint permite a los administradores auditar la actividad de análisis
+     * de cualquier usuario, incluyendo un resumen de texto, sentimiento detectado,
+     * probabilidad y fecha de cada análisis.
+     *
+     * @param userId ID del usuario cuyos análisis se desean consultar
+     * @return ResponseEntity con información del usuario y su historial de análisis
+     * @throws RuntimeException si el usuario no existe
+     */
     @Operation(
             summary = "Obtener análisis de sentimiento de un usuario (Administrador)",
             description = "Permite a un administrador consultar el historial de análisis de sentimiento de cualquier usuario del sistema con fines de auditoría y análisis global."

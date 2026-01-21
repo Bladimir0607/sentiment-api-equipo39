@@ -27,6 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Controlador para la gestión del perfil de usuario.
+ *
+ * Proporciona endpoints para que los usuarios autenticados gestionen su propia información,
+ * incluyendo consulta y actualización de perfil, cambio de contraseña y eliminación de cuenta.
+ *
+ * Todos los endpoints requieren autenticación JWT válida y solo permiten al usuario
+ * acceder y modificar su propia información.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/users")
@@ -39,6 +48,17 @@ public class UserController {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final SentimentService sentimentService;
+
+    /**
+     * Obtiene el nombre de usuario del contexto de seguridad actual.
+     *
+     * Extrae el nombre de usuario del objeto de autenticación almacenado en el
+     * SecurityContextHolder de Spring Security, manejando diferentes tipos de
+     * objetos principal (UserDetails, String, etc.).
+     *
+     * @return Nombre de usuario del usuario autenticado
+     * @throws RuntimeException si no hay usuario autenticado en el contexto
+     */
     private String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -58,6 +78,16 @@ public class UserController {
             return authentication.getName();
         }
     }
+
+    /**
+     * Obtiene el perfil completo del usuario autenticado.
+     *
+     * Recupera toda la información del perfil del usuario actualmente autenticado
+     * desde la base de datos, excluyendo datos sensibles como la contraseña.
+     *
+     * @return ResponseEntity con el {@link UserProfileDTO} del usuario
+     * @throws RuntimeException si el usuario no se encuentra en la base de datos
+     */
     @Operation(
             summary = "Obtener perfil del usuario autenticado",
             description = "Retorna la información completa del perfil del usuario que ha iniciado sesión," +
@@ -79,6 +109,15 @@ public class UserController {
                 .build());
     }
 
+    /**
+     * Actualiza la información del perfil del usuario autenticado.
+     *
+     * <p>Permite modificar campos específicos del perfil como nombre completo y email.
+     * Valida que el nuevo email no esté ya registrado por otro usuario.</p>
+     *
+     * @param request DTO con los campos a actualizar
+     * @return ResponseEntity con mensaje de confirmación o error
+     */
     @Operation(
             summary = "Actualizar perfil del usuario",
             description = "Permite al usuario autenticado modificar su información personal almacenada en la plataforma," +
@@ -105,6 +144,15 @@ public class UserController {
         return ResponseEntity.ok("Perfil actualizado correctamente");
     }
 
+    /**
+     * Cambia la contraseña del usuario autenticado.
+     *
+     * Verifica que la contraseña actual sea correcta antes de actualizarla por
+     * una nueva, garantizando la seguridad del proceso de cambio de credenciales.
+     *
+     * @param request DTO con la contraseña actual y la nueva contraseña
+     * @return ResponseEntity con mensaje de confirmación o error
+     */
     @Operation(
             summary = "Cambiar contraseña del usuario",
             description = "Permite al usuario autenticado actualizar su contraseña actual por una nueva," +
@@ -129,6 +177,15 @@ public class UserController {
         return ResponseEntity.ok("Contraseña cambiada exitosamente");
     }
 
+    /**
+     * Elimina la cuenta del usuario autenticado y toda su información asociada.
+     *
+     * Realiza una eliminación completa de la cuenta del usuario, incluyendo
+     * opcionalmente todos los análisis de sentimiento asociados antes de eliminar
+     * el registro del usuario.
+     *
+     * @return ResponseEntity con mensaje de confirmación
+     */
     @Operation(
             summary = "Eliminar cuenta propia",
             description = "Elimina permanentemente la cuenta del usuario autenticado junto con su información asociada en el sistema."

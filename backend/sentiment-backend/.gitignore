@@ -76,3 +76,6 @@ Dockerfile.old
 .idea/
 .idea/
 .idea/
+
+# JavaDoc generado
+target/site/apidocs/

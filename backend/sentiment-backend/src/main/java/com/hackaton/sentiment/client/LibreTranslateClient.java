@@ -12,113 +12,150 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Cliente HTTP para comunicación con el servicio LibreTranslate.
- * Usa WebClient (reactivo) para peticiones asíncronas.
+ * Cliente HTTP para la comunicación con el servicio externo LibreTranslate.
  *
- * Este cliente se encarga de:
- * - Traducir textos entre idiomas usando IA
- * - Obtener la lista de idiomas disponibles
- * - Verificar la disponibilidad del servicio
- * - Reintentar automáticamente si falla una petición
+ * <p>Este cliente utiliza {@link WebClient} para realizar peticiones HTTP
+ * reactivas hacia la API de LibreTranslate, permitiendo:</p>
+ *
+ * <ul>
+ *   <li>Traducción automática de textos entre múltiples idiomas</li>
+ *   <li>Consulta de idiomas soportados por el servicio</li>
+ *   <li>Verificación de disponibilidad del servicio (health check)</li>
+ *   <li>Reintentos automáticos ante fallos temporales</li>
+ * </ul>
+ *
+ * <p>Está diseñado como un componente Spring reutilizable y tolerante a fallos,
+ * con mecanismos de timeout y retry configurables.</p>
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class LibreTranslateClient {
 
+    /**
+     * Cliente reactivo utilizado para realizar las peticiones HTTP.
+     */
     private final WebClient webClient;
+
+    /**
+     * Propiedades de configuración para LibreTranslate
+     * (timeout, número de reintentos, URL base, etc.).
+     */
     private final LibreTranslateProperties properties;
 
     /**
-     * Traduce un texto de un idioma origen a un idioma destino.
+     * Traduce un texto desde un idioma origen hacia un idioma destino.
      *
-     * Ejemplo:
-     *   translate("Hola mundo", "es", "en") → "Hello world"
+     * <p>Si el texto es nulo, está vacío o el idioma origen y destino son iguales,
+     * el método retorna el texto original sin realizar ninguna llamada externa.</p>
      *
-     * @param text Texto a traducir (no puede ser null o vacío)
-     * @param sourceLanguage Código de idioma origen (es, en, pt, auto)
-     *                       Usa "auto" para detectar automáticamente
-     * @param targetLanguage Código de idioma destino (es, en, pt)
-     * @return Texto traducido, o el texto original si falla
+     * <p>En caso de error durante la comunicación con LibreTranslate,
+     * se aplica un mecanismo de tolerancia a fallos devolviendo el texto original.</p>
+     *
+     * <h3>Ejemplo de uso:</h3>
+     * <pre>{@code
+     * String result = translate("Hola mundo", "es", "en");
+     * // Resultado esperado: "Hello world"
+     * }</pre>
+     *
+     * @param text texto a traducir; no debe ser {@code null} ni vacío
+     * @param sourceLanguage código ISO 639-1 del idioma origen
+     *                       (es, en, pt o {@code auto} para detección automática)
+     * @param targetLanguage código ISO 639-1 del idioma destino (es, en, pt)
+     * @return texto traducido o el texto original si ocurre un error
      */
     public String translate(String text, String sourceLanguage, String targetLanguage) {
-        // Validar que el texto no esté vacío
+
         if (text == null || text.isBlank()) {
-            log.warn("⚠️ Texto vacío para traducir");
+            log.warn("Texto vacío recibido para traducción");
             return text;
         }
 
-        // Si el idioma origen y destino son iguales, no traducir
         if (sourceLanguage.equals(targetLanguage)) {
-            log.debug("✅ Idiomas iguales ({}), no se traduce", sourceLanguage);
+            log.debug("Idiomas origen y destino iguales ({}), no se realiza traducción", sourceLanguage);
             return text;
         }
 
         try {
-            // Log de inicio de traducción (solo primeros 50 caracteres)
-            log.info("🌐 Traduciendo: '{}' | {} → {}",
-                    text.substring(0, Math.min(50, text.length())),
+            log.info(
+                    "Iniciando traducción | Origen: {} | Destino: {} | Texto: {}",
                     sourceLanguage,
-                    targetLanguage);
+                    targetLanguage,
+                    text.substring(0, Math.min(50, text.length()))
+            );
 
-            // Construir el request para LibreTranslate
-            LibreTranslateDTO.TranslateRequest request = LibreTranslateDTO.TranslateRequest.builder()
-                    .text(text)
-                    .sourceLanguage(sourceLanguage)
-                    .targetLanguage(targetLanguage)
-                    .format("text")
-                    .build();
+            LibreTranslateDTO.TranslateRequest request =
+                    LibreTranslateDTO.TranslateRequest.builder()
+                            .text(text)
+                            .sourceLanguage(sourceLanguage)
+                            .targetLanguage(targetLanguage)
+                            .format("text")
+                            .build();
 
-            // Hacer la petición POST a /translate
             LibreTranslateDTO.TranslateResponse response = webClient.post()
                     .uri("/translate")
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(LibreTranslateDTO.TranslateResponse.class)
                     .timeout(Duration.ofMillis(properties.getTimeout()))
-                    .retryWhen(Retry.fixedDelay(properties.getRetryCount(), Duration.ofSeconds(1)))
-                    .block(); // Bloqueamos para API síncrona
+                    .retryWhen(
+                            Retry.fixedDelay(
+                                    properties.getRetryCount(),
+                                    Duration.ofSeconds(1)
+                            )
+                    )
+                    .block();
 
-            // Verificar que la respuesta tenga contenido
             if (response != null && response.getTranslatedText() != null) {
-                log.info("✅ Traducción exitosa: '{}'",
-                        response.getTranslatedText().substring(0, Math.min(50, response.getTranslatedText().length())));
+                log.info(
+                        "Traducción completada correctamente: {}",
+                        response.getTranslatedText()
+                                .substring(0, Math.min(50, response.getTranslatedText().length()))
+                );
                 return response.getTranslatedText();
             }
 
-            // Si la respuesta está vacía
-            log.warn("⚠️ Respuesta de LibreTranslate vacía");
+            log.warn("Respuesta vacía recibida desde LibreTranslate");
             return text;
 
         } catch (Exception e) {
-            // Si falla, devolver el texto original y loguear el error
-            log.error("❌ Error traduciendo con LibreTranslate: {} → {} | Error: {}",
-                    sourceLanguage, targetLanguage, e.getMessage());
-            return text; // Fallback: devolver texto original
+            log.error(
+                    "Error durante traducción | {} → {} | Detalle: {}",
+                    sourceLanguage,
+                    targetLanguage,
+                    e.getMessage()
+            );
+            return text;
         }
     }
 
     /**
-     * Obtiene la lista de idiomas disponibles en LibreTranslate.
-     * Útil para verificar que el servicio está funcionando.
+     * Obtiene la lista de idiomas soportados por el servicio LibreTranslate.
      *
-     * LibreTranslate soporta más de 100 idiomas:
-     * - es (Español)
-     * - en (Inglés)
-     * - pt (Portugués)
-     * - fr (Francés)
-     * - de (Alemán)
-     * - ja (Japonés)
-     * - zh (Chino)
-     * ... y muchos más
+     * <p>Este método puede utilizarse para validar que el servicio esté activo
+     * y respondiendo correctamente.</p>
      *
-     * @return Lista de idiomas soportados con sus códigos y nombres
+     * <p>LibreTranslate soporta más de 100 idiomas, entre ellos:</p>
+     * <ul>
+     *   <li>Es - Español</li>
+     *   <li>en - Inglés</li>
+     *   <li>pt - Portugués</li>
+     *   <li>fr - Francés</li>
+     *   <li>de - Alemán</li>
+     *   <li>zh - Chino</li>
+     * </ul>
+     *
+     * @return lista de idiomas soportados; lista vacía si ocurre un error
      */
     public List<LibreTranslateDTO.LanguageInfo> getAvailableLanguages() {
-        try {
-            log.info("📋 Obteniendo idiomas disponibles de LibreTranslate");
 
-            // Hacer petición GET a /languages
+        try {
+            log.info("Consultando idiomas disponibles en LibreTranslate");
+
             List<LibreTranslateDTO.LanguageInfo> languages = webClient.get()
                     .uri("/languages")
                     .retrieve()
@@ -128,43 +165,49 @@ public class LibreTranslateClient {
                     .block();
 
             if (languages != null && !languages.isEmpty()) {
-                log.info("✅ Obtenidos {} idiomas de LibreTranslate", languages.size());
+                log.info("Idiomas obtenidos correctamente: {}", languages.size());
             }
 
             return languages;
 
         } catch (Exception e) {
-            log.error("❌ Error obteniendo idiomas de LibreTranslate: {}", e.getMessage());
-            return List.of(); // Devolver lista vacía si falla
+            log.error("Error obteniendo idiomas de LibreTranslate: {}", e.getMessage());
+            return List.of();
         }
     }
 
     /**
-     * Verifica si el servicio LibreTranslate está disponible y funcionando.
+     * Verifica si el servicio LibreTranslate se encuentra disponible.
      *
-     * Esto es útil para:
-     * - Health checks del sistema
-     * - Verificar que Docker esté corriendo
-     * - Debugging de problemas de conexión
+     * <p>Este método se apoya en la obtención de idiomas para determinar
+     * la disponibilidad del servicio.</p>
      *
-     * @return true si el servicio responde correctamente, false en caso contrario
+     * <p>Puede utilizarse en:</p>
+     * <ul>
+     *   <li>Health checks del sistema</li>
+     *   <li>Validaciones de contenedores Docker</li>
+     *   <li>Diagnóstico de fallos de red</li>
+     * </ul>
+     *
+     * @return {@code true} si el servicio responde correctamente;
+     *         {@code false} en caso contrario
      */
     public boolean isServiceAvailable() {
+
         try {
-            // Intentar obtener la lista de idiomas
             List<LibreTranslateDTO.LanguageInfo> languages = getAvailableLanguages();
             boolean available = languages != null && !languages.isEmpty();
 
             if (available) {
-                log.info("✅ LibreTranslate disponible - {} idiomas soportados", languages.size());
+                log.info("LibreTranslate disponible ({} idiomas)", languages.size());
             } else {
-                log.warn("⚠️ LibreTranslate no respondió correctamente");
+                log.warn("LibreTranslate no respondió correctamente");
             }
 
             return available;
 
         } catch (Exception e) {
-            log.error("❌ LibreTranslate no disponible: {}", e.getMessage());
+            log.error("LibreTranslate no disponible: {}", e.getMessage());
             return false;
         }
     }

@@ -2,7 +2,9 @@
 -- SCRIPT DE INICIALIZACIÓN PARA LA BASE DE DATOS SENTIMENTDB
 -- ============================================================
 
--- Crear base de datos si no existe
+/**
+ * Crea la base de datos sentimentdb si no existe.
+ */
 CREATE DATABASE IF NOT EXISTS sentimentdb
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
@@ -12,60 +14,84 @@ USE sentimentdb;
 -- ============================================================
 -- TABLA: sentiment_analysis (ya existente en tu proyecto)
 -- ============================================================
+
+/**
+ * Tabla para almacenar análisis de sentimiento.
+ */
 CREATE TABLE IF NOT EXISTS sentiment_analysis (
                                                   id BIGINT AUTO_INCREMENT PRIMARY KEY,
                                                   text VARCHAR(500) NOT NULL,
-                                                  label VARCHAR(50) NOT NULL,
-                                                  probability DOUBLE NOT NULL,
-                                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    label VARCHAR(50) NOT NULL,
+    probability DOUBLE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- PREPARACIÓN PARA CLAVES FORÁNEAS
 -- ============================================================
+
+/**
+ * Desactiva temporalmente las restricciones de claves foráneas.
+ */
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ============================================================
 -- TABLA: languages (idiomas soportados)
 -- ============================================================
+
+/**
+ * Tabla de idiomas soportados por la aplicación.
+ */
 CREATE TABLE IF NOT EXISTS languages (
                                          code VARCHAR(5) PRIMARY KEY,
-                                         name VARCHAR(100) NOT NULL,
-                                         native_name VARCHAR(100),
-                                         active BOOLEAN DEFAULT TRUE,
-                                         is_default BOOLEAN DEFAULT FALSE,
-                                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    name VARCHAR(100) NOT NULL,
+    native_name VARCHAR(100),
+    active BOOLEAN DEFAULT TRUE,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- TABLA: translations (traducciones)
 -- ============================================================
+
+/**
+ * Tabla de traducciones de texto para múltiples idiomas.
+ */
 CREATE TABLE IF NOT EXISTS translations (
                                             id BIGINT AUTO_INCREMENT PRIMARY KEY,
                                             translation_key VARCHAR(255) NOT NULL,
-                                            language_code VARCHAR(5) NOT NULL,
-                                            translated_text TEXT,
-                                            module VARCHAR(50),
-                                            source_hash VARCHAR(64),
-                                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    language_code VARCHAR(5) NOT NULL,
+    translated_text TEXT,
+    module VARCHAR(50),
+    source_hash VARCHAR(64),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-                                            UNIQUE KEY uk_translation_key_lang (translation_key, language_code),
-                                            KEY idx_language_code (language_code),
-                                            KEY idx_translation_key (translation_key),
+    UNIQUE KEY uk_translation_key_lang (translation_key, language_code),
+    KEY idx_language_code (language_code),
+    KEY idx_translation_key (translation_key),
 
-                                            CONSTRAINT fk_translation_language FOREIGN KEY (language_code)
-                                                REFERENCES languages(code) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CONSTRAINT fk_translation_language FOREIGN KEY (language_code)
+    REFERENCES languages(code) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- RESTAURAR RESTRICCIONES
 -- ============================================================
+
+/**
+ * Reactiva las restricciones de claves foráneas.
+ */
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
 -- INSERTAR IDIOMAS INICIALES
 -- ============================================================
+
+/**
+ * Inserta los idiomas iniciales soportados por la aplicación.
+ */
 INSERT IGNORE INTO languages (code, name, native_name, active, is_default) VALUES
                                                                                ('es', 'Spanish', 'Español', TRUE, TRUE),     -- Español (idioma por defecto)
                                                                                ('en', 'English', 'English', TRUE, FALSE),    -- Inglés
@@ -76,6 +102,10 @@ INSERT IGNORE INTO languages (code, name, native_name, active, is_default) VALUE
 -- ============================================================
 -- INSERTAR TRADUCCIONES BÁSICAS
 -- ============================================================
+
+/**
+ * Inserta las traducciones básicas para los idiomas soportados.
+ */
 INSERT IGNORE INTO translations (translation_key, language_code, translated_text) VALUES
                                                                                       -- Español
                                                                                       ('sentiment.analyze.success', 'es', 'Análisis de sentimiento completado'),
@@ -119,6 +149,10 @@ INSERT IGNORE INTO translations (translation_key, language_code, translated_text
 -- ============================================================
 -- MENSAJE DE ÉXITO
 -- ============================================================
+
+/**
+ * Mensajes de confirmación de la inicialización exitosa.
+ */
 SELECT '✅ Base de datos inicializada correctamente' AS message;
 SELECT '📊 Tablas creadas: sentiment_analysis, languages, translations' AS detalle;
 SELECT CONCAT('🌍 Idiomas insertados: ', COUNT(*)) AS resultado FROM languages;

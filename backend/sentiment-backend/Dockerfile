@@ -1,14 +1,27 @@
-# Imagen base con Java 21
+# VERSIÓN ALTERNATIVA (Más simple, compatible con bind mounts)
+
+# Imagen base con Java 21 y Maven
 FROM eclipse-temurin:21-jdk-alpine
+
+# Instalar Maven
+RUN apk add --no-cache maven
 
 # Directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiamos el jar generado por Maven
-COPY target/sentiment-backend-0.0.1-SNAPSHOT.jar app.jar
+# COPIA DE MANERA SELECTIVA
+COPY pom.xml .
+COPY mvnw .
+COPY .mvn .mvn
 
-# Puerto expuesto (Spring Boot)
+# Descargar dependencias (esto se cachea)
+RUN mvn dependency:go-offline
+
+# EXPOSICIÓN DE CARPETAS PARA BIND MOUNTS
+VOLUME ["/app/src", "/app/resources"]
+
+# Puerto expuesto
 EXPOSE 8080
 
-# Comando para ejecutar la aplicación
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# COMANDO PARA DESARROLLO CON BIND MOUNTS
+CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.profiles=docker"]

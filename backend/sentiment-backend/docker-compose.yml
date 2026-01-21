@@ -4,6 +4,9 @@
 # Proyecto: Sentiment Analysis API - Hackathon Oracle ONE
 # Arquitectura: Backend (Spring Boot) + Frontend (React) +
 #               Data Science (Python) + MySQL + Redis + LibreTranslate
+# Equipo Hackathon Oracle ONE - Backend
+# version 1.4
+# since 2026-01-21
 # ============================================================
 
 services:
@@ -148,9 +151,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 10G   # Máximo 3GB de RAM
+          memory: 10G   # Máximo 10GB de RAM
         reservations:
-          memory: 10G   # Reservar mínimo 1GB al inicio
+          memory: 10G   # Reservar mínimo 10GB al inicio
 
     networks:
       - sentiment-network
@@ -179,8 +182,26 @@ services:
     ports:
       - "8080:8080"
 
+    # 🔥 VOLÚMENES PARA SINCRONIZACIÓN AUTOMÁTICA
+    volumes:
+      # 1. Sincroniza el código fuente Java
+      - ./src:/app/src
+
+      # 2. Sincroniza recursos (application.yml, i18n, etc.)
+      - ./src/main/resources:/app/resources
+
+      # 3. Cache de Maven (para builds más rápidos)
+      - ~/.m2:/root/.m2
+
+      # 4. Logs (opcional, para ver logs persistente)
+      - ./logs:/app/logs
+
     environment:
       SPRING_PROFILES_ACTIVE: docker
+
+      # 🔥 HABILITAR SPRING DEVTOOLS PARA HOT RELOAD
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
 
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/sentimentdb
       SPRING_DATASOURCE_USERNAME: root
@@ -201,6 +222,15 @@ services:
       - redis
 
     restart: unless-stopped
+
+    # 🔥 HEALTH CHECK PARA EL BACKEND
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
     networks:
       - sentiment-network
 

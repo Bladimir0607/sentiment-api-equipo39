@@ -7,7 +7,7 @@ import com.hackaton.sentiment.dto.response.SentimentStatsResponseDTO;
 import com.hackaton.sentiment.exception.GlobalExceptionHandler;
 import com.hackaton.sentiment.exception.MlServiceException;
 import com.hackaton.sentiment.service.SentimentService;
-import com.hackaton.sentiment.service.TranslationService; // 👈 CAMBIO
+import com.hackaton.sentiment.service.TranslationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -23,6 +23,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Pruebas unitarias para SentimentController.
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
+ */
 @WebMvcTest(SentimentController.class)
 @Import(GlobalExceptionHandler.class)
 class SentimentControllerTest {
@@ -34,10 +40,15 @@ class SentimentControllerTest {
     private SentimentService sentimentService;
 
     @MockitoBean
-    private TranslationService translationService; // 👈 CAMBIO
+    private TranslationService translationService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Prueba que analyze retorna 200 con texto válido.
+     *
+     * @throws Exception sí ocurre un error durante la prueba
+     */
     @Test
     void analyze_shouldReturn200_WhenValidText() throws Exception {
         SentimentRequestDTO request = new SentimentRequestDTO();
@@ -57,6 +68,11 @@ class SentimentControllerTest {
                 .andExpect(jsonPath("$.probability").value(0.87));
     }
 
+    /**
+     * Prueba que analyze retorna 400 cuando el texto está vacío.
+     *
+     * @throws Exception sí ocurre un error durante la prueba
+     */
     @Test
     void analyze_shouldReturn400_whenTextIsEmpty() throws Exception {
         SentimentRequestDTO request = new SentimentRequestDTO();
@@ -68,6 +84,11 @@ class SentimentControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Prueba que analyze retorna 503 cuando falla el servicio ML.
+     *
+     * @throws Exception sí ocurre un error durante la prueba
+     */
     @Test
     void analyze_shouldReturn503_whenMlFails() throws Exception {
         SentimentRequestDTO request = new SentimentRequestDTO();
@@ -82,6 +103,11 @@ class SentimentControllerTest {
                 .andExpect(status().isServiceUnavailable());
     }
 
+    /**
+     * Prueba que stats retorna los conteos correctos.
+     *
+     * @throws Exception sí ocurre un error durante la prueba
+     */
     @Test
     void stats_shouldReturnCounts() throws Exception {
         SentimentStatsResponseDTO stats = SentimentStatsResponseDTO.builder()

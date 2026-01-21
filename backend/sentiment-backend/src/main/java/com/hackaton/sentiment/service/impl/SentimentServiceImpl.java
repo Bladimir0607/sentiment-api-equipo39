@@ -1,5 +1,6 @@
 package com.hackaton.sentiment.service.impl;
 
+import com.hackaton.sentiment.client.LibreTranslateClient;
 import com.hackaton.sentiment.client.SentimentMlClient;
 import com.hackaton.sentiment.dto.request.SentimentRequestDTO;
 import com.hackaton.sentiment.dto.response.SentimentResponseDTO;
@@ -7,30 +8,117 @@ import com.hackaton.sentiment.dto.response.SentimentStatsResponseDTO;
 import com.hackaton.sentiment.entity.SentimentAnalysis;
 import com.hackaton.sentiment.entity.User;
 import com.hackaton.sentiment.repository.SentimentAnalysisRepository;
-import com.hackaton.sentiment.repository.UserRepository;
 import com.hackaton.sentiment.service.SentimentService;
+import com.hackaton.sentiment.service.TranslationService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Collections;
 
 import static com.hackaton.sentiment.util.SentimentLabels.*;
 
 /**
- * Implementación del servicio para análisis de sentimiento.
+ * Implementación del servicio de análisis de sentimiento con traducción automática.
  *
- * Proporciona la lógica de negocio para procesar análisis de texto, gestionar
- * estadísticas y realizar operaciones relacionadas con el historial de análisis
- * de los usuarios.
+ * <h2>Arquitectura del Sistema:</h2>
+ * <p>Este servicio actúa como <strong>orquestador</strong> entre el frontend,
+ * el sistema de traducción (LibreTranslate) y el modelo de Machine Learning.</p>
  *
- * Se integra con el cliente de machine learning para obtener predicciones
- * y gestiona la persistencia de análisis en la base de datos.
+ * <h2>Flujo Completo de Procesamiento:</h2>
+ * <pre>
+ * ┌─────────────┐
+ * │  FRONTEND   │ Usuario selecciona idioma: EN, ES, PT
+ * │  (React)    │ Envía texto: "This is great!"
+ * └──────┬──────┘
+ *        │ POST /sentiment
+ *        │ { "text": "This is great!", "language": "en" }
+ *        ▼
+ * ┌─────────────────────────────────────────────────────────┐
+ * │  BACKEND (Puerto 8080) - Spring Boot                    │
+ * │  ┌───────────────────────────────────────────────────┐ │
+ * │  │ 1. RECIBIR petición con texto e idioma            │ │
+ * │  │    - Texto original: "This is great!"             │ │
+ * │  │    - Idioma del usuario: "en"                     │ │
+ * │  └───────────────────────────────────────────────────┘ │
+ * │  ┌───────────────────────────────────────────────────┐ │
+ * │  │ 2. TRADUCIR A ESPAÑOL (si no es español)          │ │
+ * │  │    - Detecta que idioma ≠ "es"                    │ │
+ * │  │    - Llama a LibreTranslate (Docker)              │ │
+ * │  │    - Traduce: "This is great!" → "¡Esto es genial!"│ │
+ * │  └───────────────────────────────────────────────────┘ │
+ * │  ┌───────────────────────────────────────────────────┐ │
+ * │  │ 3. ENVIAR AL MODELO ML (siempre en español)       │ │
+ * │  │    POST http://datascience:8000/sentiment         │ │
+ * │  │    { "text": "¡Esto es genial!" }                 │ │
+ * │  └───────────────────────────────────────────────────┘ │
+ * └──────┬──────────────────────────────────────────────────┘
+ *        │
+ *        ▼
+ * ┌─────────────────────────────────────────────────────────┐
+ * │  DATA SCIENCE (Puerto 8000) - Python ML                 │
+ * │  ┌───────────────────────────────────────────────────┐ │
+ * │  │ 4. ANALIZAR SENTIMIENTO (modelo en español)       │ │
+ * │  │    - Recibe: "¡Esto es genial!"                   │ │
+ * │  │    - TF-IDF + Logistic Regression                 │ │
+ * │  │    - Predice: "Positivo" (0.95 probabilidad)      │ │
+ * │  └───────────────────────────────────────────────────┘ │
+ * │  ┌───────────────────────────────────────────────────┐ │
+ * │  │ 5. DEVOLVER RESULTADO (en español)                │ │
+ * │  │    { "prediction": "Positivo", "probability": 0.95 }│ │
+ * │  └───────────────────────────────────────────────────┘ │
+ * └──────┬──────────────────────────────────────────────────┘
+ *        │
+ *        ▼
+ * ┌─────────────────────────────────────────────────────────┐
+ * │  BACKEND (Puerto 8080) - Traduce respuesta              │
+ * │  ┌───────────────────────────────────────────────────┐ │
+ * │  │ 6. TRADUCIR RESULTADO AL IDIOMA ORIGINAL          │ │
+ * │  │    - Detecta idioma del usuario: "en"             │ │
+ * │  │    - Traduce: "Positivo" → "Positive"             │ │
+ * │  │    - Usa TranslationService (i18n)                │ │
+ * │  └───────────────────────────────────────────────────┘ │
+ * │  ┌───────────────────────────────────────────────────┐ │
+ * │  │ 7. DEVOLVER AL FRONTEND (idioma original)         │ │
+ * │  │    {                                               │ │
+ * │  │      "prediction": "Positive",                     │ │
+ * │  │      "probability": 0.95,                          │ │
+ * │  │      "originalText": "This is great!",             │ │
+ * │  │      "translatedText": "¡Esto es genial!"          │ │
+ * │  │    }                                               │ │
+ * │  └───────────────────────────────────────────────────┘ │
+ * └──────┬──────────────────────────────────────────────────┘
+ *        │
+ *        ▼
+ * ┌─────────────┐
+ * │  FRONTEND   │ Muestra resultado en inglés:
+ * │  (React)    │ "Positive - 95% confidence"
+ * └─────────────┘
+ * </pre>
+ *
+ * <h2>Ventajas de este enfoque:</h2>
+ * <ul>
+ *   <li><strong>Modelo único:</strong> Solo se entrena en español (simplifica mantenimiento)</li>
+ *   <li><strong>Multiidioma:</strong> El usuario puede usar cualquier idioma soportado</li>
+ *   <li><strong>Transparencia:</strong> Se devuelven ambos textos (original y traducido)</li>
+ *   <li><strong>Escalable:</strong> Fácil agregar más idiomas sin reentrenar el modelo</li>
+ * </ul>
+ *
+ * <h2>Dependencias clave:</h2>
+ * <ul>
+ *   <li>{@link LibreTranslateClient} - Traducción automática con IA</li>
+ *   <li>{@link SentimentMlClient} - Comunicación con modelo de Python</li>
+ *   <li>{@link TranslationService} - Sistema i18n para labels/resultados</li>
+ *   <li>{@link SentimentAnalysisRepository} - Persistencia de análisis</li>
+ * </ul>
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
+ * @see SentimentService
+ * @see LibreTranslateClient
+ * @see TranslationService
  */
 @Slf4j
 @Service
@@ -39,66 +127,254 @@ public class SentimentServiceImpl implements SentimentService {
 
     private final SentimentMlClient mlClient;
     private final SentimentAnalysisRepository repository;
-    private final UserRepository userRepository;
+    private final LibreTranslateClient libreTranslateClient;
+    private final TranslationService translationService;
 
     /**
-     * Analiza el sentimiento de un texto y guarda el resultado asociado al usuario actual.
+     * Analiza el sentimiento de un texto con traducción automática bidireccional.
      *
-     * Obtiene la predicción del servicio ML, normaliza la etiqueta a un formato binario
-     * (POSITIVE/NEGATIVE) y guarda el análisis en la base de datos asociado al usuario
-     * autenticado.
+     * <p>Este método implementa el flujo completo de análisis con soporte multiidioma:</p>
+     * <ol>
+     *   <li>Recibe texto en el idioma del usuario (es, en, pt)</li>
+     *   <li>Traduce a español si es necesario (el modelo solo entiende español)</li>
+     *   <li>Envía al modelo de Machine Learning para análisis</li>
+     *   <li>Guarda el resultado en base de datos</li>
+     *   <li>Traduce la respuesta al idioma original del usuario</li>
+     *   <li>Devuelve resultado completo con ambos textos</li>
+     * </ol>
      *
-     * @param request DTO con el texto a analizar
-     * @return {@link SentimentResponseDTO} con la respuesta del servicio ML
-     * @throws RuntimeException si el usuario autenticado no se encuentra en la base de datos
+     * <h3>Ejemplo de uso - Usuario en inglés:</h3>
+     * <pre>{@code
+     * // Request
+     * SentimentRequestDTO request = new SentimentRequestDTO();
+     * request.setText("This service is amazing!");
+     * request.setLanguage("en");
+     *
+     * // Procesamiento interno:
+     * // 1. originalText = "This service is amazing!"
+     * // 2. translatedText = "¡Este servicio es increíble!" (LibreTranslate)
+     * // 3. ML predice: "Positivo" con 0.94 de probabilidad
+     * // 4. Se traduce "Positivo" → "Positive" (TranslationService)
+     *
+     * // Response
+     * SentimentResponseDTO response = sentimentService.analyzeSentiment(request);
+     * // prediction: "Positive"
+     * // probability: 0.94
+     * // originalText: "This service is amazing!"
+     * // translatedText: "¡Este servicio es increíble!"
+     * // language: "en"
+     * }</pre>
+     *
+     * <h3>Manejo de idiomas:</h3>
+     * <table border="1">
+     *   <tr>
+     *     <th>Idioma</th>
+     *     <th>Traducción entrada</th>
+     *     <th>Traducción salida</th>
+     *   </tr>
+     *   <tr>
+     *     <td>es (Español)</td>
+     *     <td>No requiere (ya está en español)</td>
+     *     <td>No requiere (respuesta directa)</td>
+     *   </tr>
+     *   <tr>
+     *     <td>en (Inglés)</td>
+     *     <td>en → es (LibreTranslate)</td>
+     *     <td>"Positivo" → "Positive" (i18n)</td>
+     *   </tr>
+     *   <tr>
+     *     <td>pt (Portugués)</td>
+     *     <td>pt → es (LibreTranslate)</td>
+     *     <td>"Positivo" → "Positivo" (i18n)</td>
+     *   </tr>
+     * </table>
+     *
+     * <h3>Persistencia en base de datos:</h3>
+     * <p><strong>Importante:</strong> Los análisis se guardan <strong>siempre en español</strong>
+     * (el texto traducido), no el texto original del usuario. Esto garantiza consistencia
+     * en la base de datos independientemente del idioma de entrada.</p>
+     *
+     * <h3>Manejo de errores:</h3>
+     * <ul>
+     *   <li><strong>Fallo de traducción:</strong> Se usa el texto original (el modelo intentará analizarlo)</li>
+     *   <li><strong>Fallo del modelo ML:</strong> Se propaga {@link com.hackaton.sentiment.exception.MlServiceException}</li>
+     *   <li><strong>Fallo de i18n:</strong> Se devuelve el label en español como fallback</li>
+     * </ul>
+     *
+     * @param request DTO con el texto a analizar y el idioma del usuario
+     * @return DTO con la predicción, probabilidad, y ambos textos (original y traducido)
+     * @throws com.hackaton.sentiment.exception.MlServiceException si el servicio ML no está disponible
+     * @see SentimentRequestDTO
+     * @see SentimentResponseDTO
+     * @see LibreTranslateClient#translate(String, String, String)
+     * @see TranslationService#translate(String, String)
      */
     @Override
-    @Transactional
     public SentimentResponseDTO analyzeSentiment(SentimentRequestDTO request) {
-        // Obtener el usuario autenticado actualmente
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
+        String originalText = request.getText();
+        String userLanguage = request.getLanguage() != null ? request.getLanguage() : "es";
+        String textToAnalyze = originalText;
 
-        log.info("🔍 Usuario '{}' analizando texto de {} caracteres",
-                username, request.getText().length());
+        log.info("📥 [INICIO] Análisis de sentimiento solicitado");
+        log.info("   └─ Texto: '{}'", originalText.length() > 50
+                ? originalText.substring(0, 50) + "..."
+                : originalText);
+        log.info("   └─ Idioma del usuario: {}", userLanguage);
 
-        // Obtener predicción del ML (ahora con palabras clave desde /sentiment-explain)
-        SentimentResponseDTO mlResponse = mlClient.predict(request.getText());
+        // ============================================================
+        // PASO 1: TRADUCIR A ESPAÑOL (si no es español)
+        // ============================================================
+        // El modelo de ML solo entiende español, por lo que debemos
+        // traducir cualquier texto en otro idioma antes de analizarlo.
+        // ============================================================
+        if (!"es".equals(userLanguage)) {
+            log.info("🌐 [PASO 1] Traduciendo texto de '{}' a 'es' para el modelo ML", userLanguage);
 
-        // Normalizar etiqueta (solo Positivo/Negativo)
-        String normalizedLabel = normalizeLabelBinary(mlResponse.getPrediction());
+            try {
+                // LibreTranslate traduce el texto automáticamente
+                // Ejemplo: "This is great!" → "¡Esto es genial!"
+                textToAnalyze = libreTranslateClient.translate(originalText, userLanguage, "es");
 
-        // Crear análisis asociado al usuario
+                log.info("   └─ ✅ Traducción exitosa");
+                log.debug("      └─ Texto traducido: '{}'", textToAnalyze.length() > 50
+                        ? textToAnalyze.substring(0, 50) + "..."
+                        : textToAnalyze);
+
+            } catch (Exception e) {
+                log.warn("   └─ ⚠️ Error en traducción, usando texto original: {}", e.getMessage());
+                // Si falla la traducción, intentamos analizar el texto original
+                textToAnalyze = originalText;
+            }
+        } else {
+            log.info("✅ [PASO 1] Texto ya está en español, no requiere traducción");
+        }
+
+        // ============================================================
+        // PASO 2: ENVIAR AL MODELO ML (siempre en español)
+        // ============================================================
+        // El modelo de Data Science espera el texto en español.
+        // Se comunica vía HTTP con el servicio Python en puerto 8000.
+        // ============================================================
+        log.info("🤖 [PASO 2] Enviando al modelo de Machine Learning");
+        log.debug("   └─ Texto a analizar: '{}'", textToAnalyze.length() > 50
+                ? textToAnalyze.substring(0, 50) + "..."
+                : textToAnalyze);
+
+        SentimentResponseDTO mlResponse = mlClient.predict(textToAnalyze);
+
+        log.info("   └─ ✅ Predicción recibida");
+        log.info("      └─ Sentimiento: {}", mlResponse.getPrediction());
+        log.info("      └─ Confianza: {}%", String.format("%.2f", mlResponse.getProbability() * 100));
+
+        // ============================================================
+        // PASO 3: GUARDAR EN BASE DE DATOS (texto en español)
+        // ============================================================
+        // Importante: Guardamos el texto TRADUCIDO (en español), no el original.
+        // Esto mantiene consistencia en la base de datos.
+        // ============================================================
+        log.info("💾 [PASO 3] Guardando análisis en base de datos");
+
         SentimentAnalysis analysis = SentimentAnalysis.builder()
-                .text(request.getText())
-                .label(normalizedLabel)
+                .text(textToAnalyze)  // Texto en español (traducido si era necesario)
+                .label(normalizeLabel(mlResponse.getPrediction()))  // POSITIVE o NEGATIVE
                 .probability(mlResponse.getProbability())
-                .user(user)
                 .build();
 
         repository.save(analysis);
+        log.debug("   └─ ✅ Análisis guardado con ID: {}", analysis.getId());
 
-        log.info("✅ Análisis guardado para usuario '{}' - Sentimiento: {} (Probabilidad: {}, Palabras clave: {})",
-                username, analysis.getLabel(), mlResponse.getProbability(),
-                mlResponse.getKeyWords() != null ? mlResponse.getKeyWords().size() : 0);
+        // ============================================================
+        // PASO 4: TRADUCIR RESULTADO AL IDIOMA ORIGINAL
+        // ============================================================
+        // El modelo devuelve "Positivo" o "Negativo" en español.
+        // Debemos traducir al idioma que el usuario seleccionó.
+        // ============================================================
+        String translatedPrediction = mlResponse.getPrediction();
 
-        return mlResponse;
+        if (!"es".equals(userLanguage)) {
+            log.info("🌐 [PASO 4] Traduciendo resultado de 'es' a '{}'", userLanguage);
+
+            try {
+                // Construir la clave de traducción según el label
+                // Ejemplo: "sentiment.label.positivo" → buscar traducción en i18n
+                String labelKey = "sentiment.label." + mlResponse.getPrediction().toLowerCase();
+
+                // TranslationService usa la estrategia de 4 niveles:
+                // 1. Archivos .properties
+                // 2. Base de datos
+                // 3. LibreTranslate (si no existe)
+                // 4. Fallback a inglés
+                translatedPrediction = translationService.translate(labelKey, userLanguage);
+
+                log.info("   └─ ✅ Label traducido: '{}' → '{}'",
+                        mlResponse.getPrediction(), translatedPrediction);
+
+            } catch (Exception e) {
+                log.warn("   └─ ⚠️ Error traduciendo label, usando español: {}", e.getMessage());
+                translatedPrediction = mlResponse.getPrediction();
+            }
+        } else {
+            log.info("✅ [PASO 4] Resultado ya está en español, no requiere traducción");
+        }
+
+        // ============================================================
+        // PASO 5: CONSTRUIR Y DEVOLVER RESPUESTA COMPLETA
+        // ============================================================
+        log.info("📤 [PASO 5] Construyendo respuesta para el frontend");
+
+        SentimentResponseDTO response = SentimentResponseDTO.builder()
+                .prediction(translatedPrediction)      // Label en idioma del usuario
+                .probability(mlResponse.getProbability())
+                .originalText(originalText)            // Texto que envió el usuario
+                .translatedText(textToAnalyze)         // Texto que analizó el modelo (en español)
+                .language(userLanguage)                // Idioma del usuario
+                .build();
+
+        log.info("✅ [FIN] Análisis completado exitosamente");
+        log.info("   └─ Predicción final: {} ({}%)",
+                response.getPrediction(),
+                String.format("%.2f", response.getProbability() * 100));
+
+        return response;
     }
 
     /**
-     * Obtiene estadísticas globales de los análisis de sentimiento.
+     * Obtiene estadísticas agregadas de todos los análisis realizados.
      *
-     * Calcula el total de análisis, así como los conteos de análisis positivos
-     * y negativos registrados en el sistema.
+     * <p>Calcula el total de análisis y los separa por clasificación
+     * (positivo/negativo). Útil para dashboards y reportes.</p>
      *
-     * @return {@link SentimentStatsResponseDTO} con las estadísticas calculadas
+     * <h3>Ejemplo de respuesta:</h3>
+     * <pre>{@code
+     * {
+     *   "total": 150,
+     *   "positive": 95,
+     *   "negative": 55,
+     *   "positivePercentage": 63.33,
+     *   "negativePercentage": 36.67
+     * }
+     * }</pre>
+     *
+     * <h3>Casos de uso:</h3>
+     * <ul>
+     *   <li>Dashboard de satisfacción del cliente</li>
+     *   <li>Reportes de análisis de sentimiento</li>
+     *   <li>KPIs de atención al cliente</li>
+     *   <li>Monitoreo de campañas de marketing</li>
+     * </ul>
+     *
+     * @return DTO con estadísticas agregadas de análisis
+     * @see SentimentStatsResponseDTO
      */
     @Override
     public SentimentStatsResponseDTO getStats() {
+        log.info("📊 Calculando estadísticas de análisis de sentimiento");
+
         long total = repository.count();
         long positive = repository.countByLabel(POSITIVE);
         long negative = repository.countByLabel(NEGATIVE);
+
+        log.debug("   └─ Total: {}, Positivos: {}, Negativos: {}", total, positive, negative);
 
         return SentimentStatsResponseDTO.builder()
                 .total(total)
@@ -108,160 +384,92 @@ public class SentimentServiceImpl implements SentimentService {
     }
 
     /**
-     * Obtiene todos los análisis realizados por el usuario actualmente autenticado.
+     * Normaliza el label de predicción del modelo a formato canónico.
      *
-     * @return Lista de {@link SentimentAnalysis} del usuario autenticado
-     * @throws RuntimeException si el usuario autenticado no se encuentra en la base de datos
+     * <p>El modelo de ML puede devolver las predicciones en diferentes formatos
+     * (con mayúsculas, minúsculas, acentos, etc.). Este método las normaliza
+     * a los valores canónicos {@link com.hackaton.sentiment.util.SentimentLabels}.</p>
+     *
+     * <h3>Mapeo de normalizaciones:</h3>
+     * <table border="1">
+     *   <tr>
+     *     <th>Entrada del modelo</th>
+     *     <th>Salida normalizada</th>
+     *   </tr>
+     *   <tr>
+     *     <td>"Positivo", "positivo", "POSITIVO", "positive", "Positive"</td>
+     *     <td>{@code SentimentLabels.POSITIVE}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>"Negativo", "negativo", "NEGATIVO", "negative", "Negative"</td>
+     *     <td>{@code SentimentLabels.NEGATIVE}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>null, "", cualquier otro valor</td>
+     *     <td>{@code SentimentLabels.NEGATIVE} (fallback seguro)</td>
+     *   </tr>
+     * </table>
+     *
+     * <h3>Justificación del fallback a NEGATIVE:</h3>
+     * <p>En caso de recibir un valor inesperado o null, se clasifica como
+     * NEGATIVE por precaución. Esto es preferible en contextos de atención
+     * al cliente donde es mejor revisar un caso dudoso que ignorar
+     * un posible problema.</p>
+     *
+     * @param prediction Label de predicción del modelo ML (puede ser en español o inglés)
+     * @return Label normalizado ({@code POSITIVE} o {@code NEGATIVE})
+     * @see com.hackaton.sentiment.util.SentimentLabels
      */
+    private String normalizeLabel(String prediction) {
+        if (prediction == null || prediction.isBlank()) {
+            log.warn("⚠️ Predicción null o vacía, usando NEGATIVE como fallback");
+            return NEGATIVE;
+        }
+
+        String normalized = switch (prediction.toLowerCase().trim()) {
+            case "positive", "positivo" -> POSITIVE;
+            case "negative", "negativo" -> NEGATIVE;
+            default -> {
+                log.warn("⚠️ Label desconocido: '{}', usando NEGATIVE como fallback", prediction);
+                yield NEGATIVE;
+            }
+        };
+
+        log.debug("🔄 Label normalizado: '{}' → '{}'", prediction, normalized);
+        return normalized;
+    }
+
+    @Override
     public List<SentimentAnalysis> getMyAnalyses() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
-
-        return repository.findByUser(user);
+        log.info("📄 Obteniendo análisis del usuario autenticado");
+        // TODO: filtrar por usuario autenticado cuando se integre SecurityContext
+        return repository.findAll();
     }
 
-    /**
-     * Obtiene todos los análisis del sistema incluyendo la información de usuarios.
-     *
-     * <p>Utiliza JOIN FETCH para evitar el problema N+1 y optimizar la carga de
-     * la relación con los usuarios.</p>
-     *
-     * JOIN FETCH para evitar LazyInitializationException
-     *
-     * @return Lista de todos los {@link SentimentAnalysis} ordenados por fecha descendente
-     */
-
+    @Override
     public List<SentimentAnalysis> getAllAnalyses() {
-        log.info("Obteniendo todos los análisis con usuarios...");
-        return repository.findAllWithUser();
+        log.info("📂 ADMIN - obteniendo todos los análisis del sistema");
+        return repository.findAll();
     }
 
-    /**
-     * Obtiene estadísticas avanzadas del sistema para uso administrativo (para ADMIN).
-     *
-     * Incluye métricas como total de análisis, total de usuarios, promedio de
-     * análisis por usuario y distribución de sentimientos.
-     *
-     * @return Mapa con las estadísticas avanzadas calculadas
-     */
+    @Override
     public Object getAdvancedStats() {
-        long totalAnalyses = repository.count();
-        long totalUsers = userRepository.count();
-        long positive = repository.countByLabel(POSITIVE);
-        long negative = repository.countByLabel(NEGATIVE);
-
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalAnalyses", totalAnalyses);
-        stats.put("totalUsers", totalUsers);
-        stats.put("avgAnalysesPerUser", totalUsers > 0 ?
-                String.format("%.1f", (double) totalAnalyses / totalUsers) : 0);
-
-        // Solo Positivo/Negativo
-        Map<String, Long> sentimentMap = new HashMap<>();
-        sentimentMap.put("positive", positive);
-        sentimentMap.put("negative", negative);
-
-        stats.put("analysesBySentiment", sentimentMap);
-        stats.put("timestamp", LocalDateTime.now());
-
-        return stats;
+        log.info("📊 ADMIN - obteniendo estadísticas avanzadas");
+        // TODO: implementar métricas avanzadas (promedios, tendencias, etc.)
+        return Collections.emptyMap();
     }
 
-    /**
-     * Normaliza la etiqueta de predicción a un formato binario (POSITIVE/NEGATIVE).
-     *
-     * Convierte cualquier variación de etiquetas de sentimiento a solo dos
-     * categorías: POSITIVE o NEGATIVE, eliminando categorías intermedias como NEUTRAL.
-     *
-     * @param prediction Etiqueta de predicción original del servicio ML
-     * @return Etiqueta normalizada (POSITIVE o NEGATIVE)
-     */
-    private String normalizeLabelBinary(String prediction) {
-        if (prediction == null) {
-            return NEGATIVE; // Por defecto, si es nulo
-        }
-
-        String lowerPrediction = prediction.toLowerCase();
-
-        // Solo Positivo/Negativo
-        if (lowerPrediction.contains("positiv") ||
-                "positivo".equals(lowerPrediction) ||
-                "positive".equals(lowerPrediction)) {
-            return POSITIVE;
-        }
-
-        // Cualquier otra cosa (incluyendo "negativo", "negative", etc.) es NEGATIVE
-        return NEGATIVE;
-    }
-
-    /**
-     * Elimina todos los análisis asociados a un usuario específico.
-     *
-     * @param user Usuario cuyos análisis se desean eliminar
-     * @throws IllegalArgumentException si el usuario es nulo o no tiene ID válido
-     */
     @Override
     @Transactional
     public void deleteAnalysesByUser(User user) {
-        if (user == null || user.getId() == null) {
-            throw new IllegalArgumentException("Usuario inválido");
-        }
-
-        log.info("Eliminando análisis del usuario: {}", user.getUsername());
-
-        List<SentimentAnalysis> userAnalyses = repository.findByUser(user);
-
-        if (!userAnalyses.isEmpty()) {
-            repository.deleteAll(userAnalyses);
-            log.info("Se eliminaron {} análisis del usuario {}",
-                    userAnalyses.size(), user.getUsername());
-        } else {
-            log.info("El usuario {} no tenía análisis para eliminar", user.getUsername());
-        }
+        log.info("🗑️ Eliminando análisis del usuario con ID: {}", user.getId());
+        repository.deleteByUser(user);
     }
 
-    /**
-     * Obtiene todos los análisis de sentimiento de un usuario específico por su ID.
-     *
-     * @param userId ID del usuario cuyos análisis se desean consultar
-     * @return Lista de análisis del usuario especificado
-     * @throws RuntimeException si el usuario no existe
-     */
     @Override
     public List<SentimentAnalysis> getUserAnalyses(Long userId) {
-        log.info("Obteniendo análisis del usuario ID: {}", userId);
-
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("Usuario no encontrado con ID: " + userId);
-        }
-
-        List<SentimentAnalysis> analyses = repository.findByUserId(userId);
-        log.info("Encontrados {} análisis para el usuario ID: {}", analyses.size(), userId);
-        return analyses;
+        log.info("📄 ADMIN - obteniendo análisis del usuario con ID: {}", userId);
+        return repository.findByUserId(userId);
     }
 
-    /**
-     * Método adicional de utilidad para migrar análisis con etiqueta NEUTRAL a NEGATIVE.
-     *
-     * <p>Puede utilizarse para actualizar datos existentes si se cambia de un
-     * sistema de tres categorías (POSITIVE/NEUTRAL/NEGATIVE) a uno binario
-     * (POSITIVE/NEGATIVE).</p>
-     *
-     * Actualmente comentado, se puede habilitar según necesidades específicas.
-     */
-    @Transactional
-    public void migrateNeutralAnalyses() {
-        try {
-            // Si aún existe la constante NEUTRAL en el código o en la base de datos
-            // List<SentimentAnalysis> neutralAnalyses = repository.findByLabel("NEUTRAL");
-            // if (!neutralAnalyses.isEmpty()) {
-            //     log.info("Migrando {} análisis NEUTRAL a NEGATIVO", neutralAnalyses.size());
-            //     neutralAnalyses.forEach(analysis -> analysis.setLabel(NEGATIVE));
-            //     repository.saveAll(neutralAnalyses);
-            // }
-        } catch (Exception e) {
-            log.warn("No se pudieron migrar análisis neutrales: {}", e.getMessage());
-        }
-    }
 }

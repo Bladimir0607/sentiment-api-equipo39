@@ -17,11 +17,19 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador para el análisis de sentimiento de textos.
+ * Controlador REST para el análisis de sentimiento de textos.
  *
- * Proporciona endpoints para analizar textos, obtener estadísticas y consultar
- * el historial de análisis realizados por los usuarios. Requiere autenticación
- * para la mayoría de sus operaciones.
+ * <p>Este controlador expone endpoints que permiten analizar el sentimiento
+ * de textos, obtener estadísticas agregadas y consultar el historial de
+ * análisis realizados por los usuarios autenticados.</p>
+ *
+ * <p>La mayoría de las operaciones requieren autenticación previa mediante
+ * token JWT.</p>
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
+ *
  */
 @RestController
 @RequestMapping("/sentiment")
@@ -32,14 +40,15 @@ public class SentimentController {
     private final SentimentService sentimentService;
 
     /**
-     * Analiza el sentimiento de un texto proporcionado.
+     * Analiza el sentimiento de un texto proporcionado por el usuario.
      *
-     * Envía el texto al servicio de machine learning para determinar su
-     * sentimiento (positivo/negativo) y retorna la predicción con detalles
-     * como la etiqueta y probabilidad asociada.
+     * <p>El texto es enviado al servicio de Machine Learning, el cual determina
+     * el sentimiento asociado (por ejemplo, positivo o negativo) y retorna
+     * la predicción junto con información adicional como la etiqueta y la
+     * probabilidad.</p>
      *
-     * @param request DTO con el texto a analizar
-     * @return {@link SentimentResponseDTO} con los resultados del análisis
+     * @param request DTO que contiene el texto a analizar
+     * @return {@link SentimentResponseDTO} con el resultado del análisis
      */
     @Operation(
             summary = "Analizar sentimiento de un texto",
@@ -48,7 +57,7 @@ public class SentimentController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Predicción exitosa"),
             @ApiResponse(responseCode = "400", description = "Error de validación"),
-            @ApiResponse(responseCode = "503", description = "Servicio ML no disponible")
+            @ApiResponse(responseCode = "503", description = "Servicio de Machine Learning no disponible")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
@@ -59,18 +68,20 @@ public class SentimentController {
     }
 
     /**
-     * Obtiene estadísticas globales de todos los análisis de sentimiento.
+     * Obtiene estadísticas globales de los análisis de sentimiento.
      *
-     * Proporciona métricas agregadas de los análisis realizados en la plataforma,
-     * incluyendo conteos de comentarios positivos y negativos, útil para análisis
-     * general del comportamiento emocional de los usuarios.
+     * <p>Este endpoint retorna métricas agregadas de todos los análisis
+     * realizados en la plataforma, incluyendo la cantidad de comentarios
+     * positivos y negativos.</p>
+     *
+     * <p>La información proporcionada es útil para obtener una visión general
+     * del comportamiento emocional de los usuarios.</p>
      *
      * @return {@link SentimentStatsResponseDTO} con las estadísticas globales
      */
     @Operation(
             summary = "Obtener estadísticas globales de sentimiento",
-            description = "Retorna métricas agregadas de todos los análisis de sentimiento registrados en la plataforma, incluyendo totales de comentarios positivos y negativos. " +
-                    "Esta información es útil para obtener una visión general del comportamiento emocional de los usuarios."
+            description = "Retorna métricas agregadas de todos los análisis de sentimiento registrados en la plataforma, incluyendo totales de comentarios positivos y negativos."
     )
     @GetMapping("/stats")
     public SentimentStatsResponseDTO stats() {
@@ -78,13 +89,13 @@ public class SentimentController {
     }
 
     /**
-     * Obtiene el historial de análisis realizados por el usuario actual.
+     * Obtiene el historial de análisis de sentimiento del usuario actual.
      *
-     * Retorna la lista completa de análisis de sentimiento que el usuario
-     * autenticado ha realizado en la plataforma, permitiendo revisar su
-     * historial de interacciones.
+     * <p>Retorna la lista completa de análisis de sentimiento realizados por
+     * el usuario autenticado, permitiéndole revisar su historial de
+     * interacciones dentro de la plataforma.</p>
      *
-     * @return Lista de {@link SentimentAnalysis} del usuario actual
+     * @return lista de {@link SentimentAnalysis} asociados al usuario actual
      */
     @Operation(
             summary = "Ver mis análisis",

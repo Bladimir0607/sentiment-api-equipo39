@@ -20,18 +20,24 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Configuración principal de seguridad para la aplicación.
+ * Configuración principal de seguridad de la aplicación.
  *
- * Esta clase configura Spring Security para usar autenticación basada en JWT,
- * establece políticas de autorización para diferentes endpoints, y define la cadena
- * de filtros de seguridad.
+ * <p>Esta clase define la configuración de Spring Security utilizando
+ * autenticación basada en JWT (JSON Web Tokens). Se encarga de establecer
+ * las reglas de autorización, la política de sesiones y la integración
+ * del filtro de autenticación JWT.</p>
  *
- * La configuración incluye:
- *   1. Deshabilitación de CSRF para API REST stateless
- *   2. Configuración de CORS
- *   3. Definición de reglas de autorización por endpoints
- *   4. Configuración de sesiones stateless
- *   5. Integración del filtro JWT en la cadena de seguridad
+ * <p>Características principales:</p>
+ * <ul>
+ *   <li>Arquitectura stateless para APIs REST</li>
+ *   <li>Autenticación y autorización basada en JWT</li>
+ *   <li>Protección de endpoints por roles</li>
+ *   <li>Integración con {@link UserDetailsService}</li>
+ * </ul>
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
  */
 @Configuration
 @EnableWebSecurity
@@ -43,17 +49,20 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
 
     /**
-     * Configura la cadena de filtros de seguridad principal.
+     * Configura la cadena de filtros de seguridad de Spring Security.
      *
-     * Define la configuración de seguridad HTTP incluyendo:
-     *   1. Endpoints públicos (autenticación, health check, documentación).
-     *   2. Endpoints restringidos por roles
-     *   3. Política de sesiones stateless
-     *   4. Integración del filtro JWT de autenticación
+     * <p>Incluye:</p>
+     * <ul>
+     *   <li>Deshabilitación de CSRF para APIs REST</li>
+     *   <li>Configuración de CORS</li>
+     *   <li>Definición de endpoints públicos y protegidos</li>
+     *   <li>Política de sesión stateless</li>
+     *   <li>Registro del filtro de autenticación JWT</li>
+     * </ul>
      *
-     * @param http Configurador de seguridad HTTP de Spring
-     * @return La cadena de filtros de seguridad configurada
-     * @throws Exception Si ocurre un error en la configuración
+     * @param http configurador de seguridad HTTP
+     * @return {@link SecurityFilterChain} configurado
+     * @throws Exception si ocurre un error durante la configuración
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -83,9 +92,13 @@ public class SecurityConfig {
     }
 
     /**
-     * Crea y configura el filtro de autenticación JWT.
+     * Crea el filtro de autenticación JWT.
      *
-     * @return Instancia configurada de {@link JwtAuthenticationFilter}
+     * <p>Este filtro intercepta las peticiones HTTP, valida el token JWT
+     * presente en la cabecera Authorization y establece el contexto de
+     * seguridad si el token es válido.</p>
+     *
+     * @return instancia de {@link JwtAuthenticationFilter}
      */
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -93,12 +106,13 @@ public class SecurityConfig {
     }
 
     /**
-     * Configura el proveedor de autenticación para Spring Security.
+     * Configura el proveedor de autenticación de Spring Security.
      *
-     * Utiliza {@link DaoAuthenticationProvider} que integra con el {@link UserDetailsService}
-     * proporcionado y el codificador de contraseñas configurado.
+     * <p>Utiliza {@link DaoAuthenticationProvider} para autenticar usuarios
+     * a partir del {@link UserDetailsService} y un codificador de contraseñas
+     * basado en BCrypt.</p>
      *
-     * @return Proveedor de autenticación configurado
+     * @return {@link AuthenticationProvider} configurado
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -109,11 +123,12 @@ public class SecurityConfig {
     }
 
     /**
-     * Expone el {@link AuthenticationManager} para uso en la aplicación.
+     * Expone el {@link AuthenticationManager} para su uso en el proceso
+     * de autenticación.
      *
-     * @param config Configuración de autenticación proporcionada por Spring
-     * @return AuthenticationManager configurado
-     * @throws Exception Si ocurre un error al obtener el AuthenticationManager
+     * @param config configuración de autenticación de Spring
+     * @return {@link AuthenticationManager}
+     * @throws Exception si ocurre un error al obtener el administrador
      */
     @Bean
     public AuthenticationManager authenticationManager(
@@ -123,12 +138,12 @@ public class SecurityConfig {
     }
 
     /**
-     * Configura el codificador de contraseñas para la aplicación.
+     * Define el codificador de contraseñas de la aplicación.
      *
-     * Utiliza {@link BCryptPasswordEncoder} que es un codificador seguro
-     * basado en el algoritmo BCrypt para hashing de contraseñas.
+     * <p>Se utiliza {@link BCryptPasswordEncoder}, un algoritmo seguro
+     * recomendado para el hashing de contraseñas.</p>
      *
-     * @return Instancia de PasswordEncoder usando BCrypt
+     * @return instancia de {@link PasswordEncoder}
      */
     @Bean
     public PasswordEncoder passwordEncoder() {

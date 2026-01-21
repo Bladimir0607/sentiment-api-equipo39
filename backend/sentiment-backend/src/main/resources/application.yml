@@ -1,6 +1,7 @@
 # ============================================================
 # CONFIGURACIÓN PRINCIPAL DE SPRING BOOT
 # ============================================================
+
 server:
   port: 8080
 
@@ -8,19 +9,15 @@ spring:
   # ============================================================
   # CONFIGURACIÓN DE PERFILES
   # ============================================================
-  # Perfiles disponibles:
-  # - local: Desarrollo con MySQL WAMP (puerto 3306)
-  # - docker: Producción con MySQL Docker (puerto 3307 desde host)
-  # - test: Testing con H2 en memoria
   profiles:
-    active: local  # Perfil por defecto para desarrollo
+    active: local
 
   # ============================================================
   # CONFIGURACIÓN DE JPA/HIBERNATE
   # ============================================================
   jpa:
     hibernate:
-      ddl-auto: update  # En producción cambiar a 'valídate'
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -42,12 +39,10 @@ spring:
   # ============================================================
   # CONFIGURACIÓN DE INTERNACIONALIZACIÓN (I18N)
   # ============================================================
-  # Los archivos messages.properties están en src/main/resources/i18n/
   messages:
     basename: i18n/messages
     encoding: UTF-8
     fallback-to-system-locale: false
-
 
   # ============================================================
   # CONFIGURACIÓN DE REDIS (CACHÉ)
@@ -69,7 +64,7 @@ spring:
   cache:
     type: redis
     redis:
-      time-to-live: 3600000  # 1 hora en milisegundos
+      time-to-live: 3600000
       cache-null-values: false
       key-prefix: "translation:"
       use-key-prefix: true
@@ -92,7 +87,7 @@ logging:
     org.hibernate.SQL: debug
     org.flywaydb.core: debug
     com.hackaton.sentiment.service: INFO
-    com.hackaton.sentiment.client: INFO  # 👈 NUEVO: logs de LibreTranslate
+    com.hackaton.sentiment.client: INFO
     org.springframework.cache: INFO
     org.springframework.web: INFO
   pattern:
@@ -103,21 +98,20 @@ logging:
 # ============================================================
 # CONFIGURACIÓN DE LIBRETRANSLATE (TRADUCCIÓN AUTOMÁTICA)
 # ============================================================
-# ⭐ ESTA ES LA CONFIGURACIÓN CLAVE PARA TU PROYECTO
 libretranslate:
-  url: http://localhost:5000  # URL del servicio LibreTranslate
-  enabled: true               # Habilitar traducción automática
-  cache-enabled: true         # Usar Redis para cachear traducciones
-  timeout: 10000              # Timeout de 10 segundos
-  retry-count: 2              # Número de reintentos
+  url: http://localhost:5000
+  enabled: true
+  cache-enabled: true
+  timeout: 10000
+  retry-count: 2
 
 # ============================================================
 # CONFIGURACIÓN DEL MICROSERVICIO DE MACHINE LEARNING
 # ============================================================
 ml:
   service:
-    url: http://localhost:8000  # URL del servicio de Data Science
-    timeout: 15000              # Timeout de 15 segundos
+    url: http://localhost:8000
+    timeout: 15000
 
 # ============================================================
 # CONFIGURACIÓN DE CORS (FRONTEND)
@@ -140,7 +134,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: root
-    password: ${SPRING_DATASOURCE_PASSWORD} # 👈 Variable de entorno o Poner la contrasena directamente
+    password: B$b0607052122
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -155,33 +149,26 @@ spring:
     activate:
       on-profile: docker
 
-  # ============================================================
-  # IMPORTANTE: En Docker, los servicios se comunican por nombre
-  # Ejemplo: "mysql" en lugar de "localhost"
-  # ============================================================
   datasource:
     url: jdbc:mysql://mysql:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: root
-    password: ${SPRING_DATASOURCE_PASSWORD}  # 👈 Variable de entorno o Poner la contrasena directamente 
+    password: B$b0607052122
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
 
-  # Redis en Docker
   data:
     redis:
-      host: redis  # 👈 Nombre del servicio en docker-compose
+      host: redis
       port: 6379
 
-# LibreTranslate en Docker
 libretranslate:
-  url: ${LIBRETRANSLATE_URL:http://libretranslate:5000}  # 👈 Variable de entorno con fallback
+  url: ${LIBRETRANSLATE_URL:http://libretranslate:5000}
 
-# ML Service en Docker
 ml:
   service:
-    url: ${ML_SERVICE_URL:http://datascience:8000}  # 👈 Variable de entorno con fallback
+    url: ${ML_SERVICE_URL:http://datascience:8000}
 
 jwt:
   secret: ${JWT_SECRET}

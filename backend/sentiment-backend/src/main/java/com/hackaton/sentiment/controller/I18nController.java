@@ -15,20 +15,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controlador REST para gestión de internacionalización (i18n).
+ * Controlador REST para la gestión de internacionalización (i18n).
  *
- * ENDPOINTS DISPONIBLES:
+ * <p>Este controlador expone endpoints para traducir textos, gestionar idiomas
+ * y verificar el estado del sistema de traducciones.</p>
  *
- * 1. GET  /api/i18n/translate          - Traducir una clave individual
- * 2. POST /api/i18n/translate/batch    - Traducir múltiples textos
- * 3. GET  /api/i18n/translations/{lang} - Obtener todas las traducciones
- * 4. GET  /api/i18n/status             - Estado del sistema de traducción
- * 5. GET  /api/i18n/languages          - Idiomas disponibles (100+)
- * 6. POST /api/i18n/translate/direct   - Traducción directa con LibreTranslate
- * 7. GET  /api/i18n/hello              - Endpoint de prueba simple
+ * <h3>Endpoints disponibles</h3>
+ * <ul>
+ *   <li>GET  /api/i18n/translate – Traducir una clave individual</li>
+ *   <li>POST /api/i18n/translate/batch – Traducir múltiples textos</li>
+ *   <li>GET /api/i18n/translations/{lang} – Obtener todas las traducciones</li>
+ *   <li>GET /api/i18n/status – Estado del sistema de traducción</li>
+ *   <li>GET  /api/i18n/languages – Idiomas disponibles</li>
+ *   <li>POST /api/i18n/translate/direct – Traducción directa con LibreTranslate</li>
+ *   <li>GET  /api/i18n/hello – Endpoint de prueba simple</li>
+ * </ul>
  *
- * EJEMPLOS DE USO DESDE EL FRONTEND:
+ * <h3>Ejemplos de uso desde el frontend</h3>
  *
+ * <pre>
  * // Traducir una clave
  * fetch('http://localhost:8080/api/i18n/translate?key=error.text.required&lang=en')
  *
@@ -40,6 +45,13 @@ import java.util.Map;
  *   method: 'POST',
  *   body: JSON.stringify({ "button.analyze": "Analizar" })
  * })
+ * </pre>
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
+ *
+ *
  */
 @Slf4j
 @RestController
@@ -53,32 +65,32 @@ public class I18nController {
 
     /**
      * Endpoint principal para obtener una traducción.
-     * El frontend debe usar este endpoint para todos los textos.
      *
-     * ESTRATEGIA DE TRADUCCIÓN:
-     * 1. Busca en archivos.properties
-     * 2. Busca en base de datos
-     * 3. Traduce con LibreTranslate (IA)
-     * 4. Fallback a inglés o texto original
+     * <p>Este endpoint debe ser utilizado por el frontend para todos los textos
+     * de la aplicación.</p>
      *
-     * EJEMPLO DE USO:
-     * GET /api/i18n/translate?Key=error.text.required&lang=en
+     * <h3>Estrategia de traducción</h3>
+     * <ol>
+     *   <li>Archivos <code>.properties</code></li>
+     *   <li>Base de datos</li>
+     *   <li>LibreTranslate (IA)</li>
+     *   <li>Fallback a inglés o texto original</li>
+     * </ol>
      *
-     * RESPUESTA:
-     * {
-     *   "key": "error.text.required",
-     *   "language": "en",
-     *   "translation": "Text cannot be empty",
-     *   "success": "true"
-     * }
+     * <h3>Ejemplo de uso</h3>
+     * <pre>
+     * GET /api/i18n/translate?key=error.text.required&lang=en
+     * </pre>
      *
-     * @param key Clave de traducción (ej: "error.text.required")
-     * @param lang Código de idioma (es, en, pt)
-     * @return Traducción del texto
+     * @param key clave de traducción (ej. {@code error.text.required})
+     * @param lang código de idioma (es, en, pt)
+     * @return traducción del texto solicitada
      */
     @GetMapping("/translate")
-    @Operation(summary = "Obtener traducción",
-            description = "Traduce una clave a un idioma específico usando la estrategia de 4 niveles")
+    @Operation(
+            summary = "Obtener traducción",
+            description = "Traduce una clave a un idioma específico usando la estrategia de 4 niveles"
+    )
     public ResponseEntity<Map<String, String>> getTranslation(
             @RequestParam String key,
             @RequestParam(defaultValue = "es") String lang) {
@@ -97,118 +109,92 @@ public class I18nController {
     }
 
     /**
-     * Endpoint para traducir múltiples textos de una vez.
-     * El frontend puede cargar todas sus traducciones con una sola llamada.
+     * Endpoint para traducir múltiples textos en una sola llamada.
      *
-     * VENTAJA: Reduce el número de peticiones HTTP
+     * <p>Permite al frontend cargar todas sus traducciones de forma eficiente,
+     * reduciendo el número de peticiones HTTP.</p>
      *
-     * EJEMPLO DE USO:
+     * <h3>Ejemplo de uso</h3>
+     * <pre>
      * POST /api/i18n/translate/batch?lang=en
-     * Body: {
-     *   "button.analyze": "Analizar",
-     *   "button.clear": "Limpiar",
-     *   "error.text.required": "El texto no puede estar vacío"
-     * }
+     * </pre>
      *
-     * RESPUESTA:
-     * {
-     *   "button.analyze": "Analyze",
-     *   "button.clear": "Clear",
-     *   "error.text.required": "Text cannot be empty"
-     * }
-     *
-     * @param request Mapa de textos a traducir
-     * @param lang Código de idioma destino
-     * @return Mapa de textos traducidos
+     * @param request mapa de textos a traducir
+     * @param lang código de idioma destino
+     * @return mapa de textos traducidos
      */
     @PostMapping("/translate/batch")
-    @Operation(summary = "Traducir múltiples textos",
-            description = "Traduce un conjunto de textos en una sola petición (batch)")
+    @Operation(
+            summary = "Traducir múltiples textos",
+            description = "Traduce un conjunto de textos en una sola petición (batch)"
+    )
     public ResponseEntity<Map<String, String>> translateBatch(
             @RequestBody Map<String, String> request,
             @RequestParam(defaultValue = "es") String lang) {
 
         log.info("📦 Traducción en batch: {} textos → '{}'", request.size(), lang);
 
-        Map<String, String> translations = translationService.translateBatch(request, lang);
+        Map<String, String> translations =
+                translationService.translateBatch(request, lang);
 
         return ResponseEntity.ok(translations);
     }
 
     /**
-     * Obtiene TODAS las traducciones para un idioma.
-     * El frontend puede cargar esto al inicio de la aplicación.
+     * Obtiene todas las traducciones disponibles para un idioma.
      *
-     * CASO DE USO RECOMENDADO:
-     * - Cargar en el primer render de la app
-     * - Guardar en contexto/store de React/Vue/Angular
-     * - Evita múltiples llamadas HTTP durante la sesión
+     * <p>Uso recomendado para cargar las traducciones al inicio de la aplicación
+     * y almacenarlas en el estado global del frontend.</p>
      *
-     * EJEMPLO DE USO:
-     * GET /api/i18n/translations/es
-     *
-     * RESPUESTA:
-     * {
-     *   "error.text.required": "El texto no puede estar vacío",
-     *   "button.analyze": "Analizar",
-     *   "sentiment.label.positive": "Positivo",
-     *   ... (todas las traducciones)
-     * }
-     *
-     * @param lang Código de idioma (es, en, pt)
-     * @return Todas las traducciones disponibles
+     * @param lang código de idioma
+     * @return diccionario completo de traducciones
      */
     @GetMapping("/translations/{lang}")
-    @Operation(summary = "Obtener todas las traducciones de un idioma",
-            description = "Devuelve el diccionario completo de traducciones para cargar en el frontend")
+    @Operation(
+            summary = "Obtener todas las traducciones de un idioma",
+            description = "Devuelve el diccionario completo de traducciones para cargar en el frontend"
+    )
     public ResponseEntity<Map<String, String>> getAllTranslations(
             @PathVariable String lang) {
 
         log.info("📚 Cargando todas las traducciones para '{}'", lang);
 
-        Map<String, String> translations = translationService.getAllTranslationsForLanguage(lang);
+        Map<String, String> translations =
+                translationService.getAllTranslationsForLanguage(lang);
 
         return ResponseEntity.ok(translations);
     }
 
     /**
      * Verifica el estado de los servicios de traducción.
-     * Útil para debugging, monitoreo y health checks.
      *
-     * INFORMACIÓN DEVUELTA:
-     * - Estado de archivos .properties
-     * - Conexión a base de datos
-     * - Disponibilidad de LibreTranslate (Docker)
-     * - Estado del caché Redis
-     * - Cantidad de traducciones en DB
+     * <p>Este endpoint es útil para monitoreo, debugging y health checks.</p>
      *
-     * EJEMPLO DE USO:
-     * GET /api/i18n/status
+     * <p>Incluye información sobre:</p>
+     * <ul>
+     *   <li>Archivos de propiedades</li>
+     *   <li>Base de datos</li>
+     *   <li>LibreTranslate</li>
+     *   <li>Caché</li>
+     * </ul>
      *
-     * RESPUESTA:
-     * {
-     *   "messageSourceAvailable": true,
-     *   "databaseAvailable": true,
-     *   "libreTranslateEnabled": true,
-     *   "libreTranslateAvailable": true,
-     *   "libreTranslateConnected": true,
-     *   "cacheEnabled": true,
-     *   "databaseTranslationsCount": 45,
-     *   "libreTranslateLanguagesCount": 118
-     * }
-     *
-     * @return Estado de cada componente del sistema
+     * @return estado de cada componente del sistema
      */
     @GetMapping("/status")
-    @Operation(summary = "Estado del servicio de traducción",
-            description = "Verifica la disponibilidad de cada nivel de traducción y servicios")
+    @Operation(
+            summary = "Estado del servicio de traducción",
+            description = "Verifica la disponibilidad de cada nivel de traducción y servicios"
+    )
     public ResponseEntity<Map<String, Object>> getStatus() {
+
         log.info("🔍 Verificando estado de servicios de traducción");
 
-        Map<String, Object> status = translationService.getServiceStatus();
+        Map<String, Object> status =
+                translationService.getServiceStatus();
 
-        // Agregar información específica de LibreTranslate
-        boolean libreAvailable = libreTranslateClient.isServiceAvailable();
+        boolean libreAvailable =
+                libreTranslateClient.isServiceAvailable();
+
         status.put("libreTranslateConnected", libreAvailable);
 
         if (libreAvailable) {
@@ -222,31 +208,19 @@ public class I18nController {
 
     /**
      * Lista los idiomas disponibles en LibreTranslate.
-     * Útil para ver qué idiomas se pueden usar en la aplicación.
      *
-     * LibreTranslate soporta más de 100 idiomas:
-     * - Español (es), Inglés (en), Portugués (pt)
-     * - Francés (fr), Alemán (de), Italiano (it)
-     * - Japonés (ja), Chino (zh), Árabe (ar)
-     * - Y muchos más...
+     * <p>LibreTranslate soporta más de 100 idiomas, incluyendo español, inglés,
+     * portugués, francés, alemán, japonés, chino y árabe.</p>
      *
-     * EJEMPLO DE USO:
-     * GET /api/i18n/languages
-     *
-     * RESPUESTA:
-     * [
-     *   { "code": "es", "name": "Spanish" },
-     *   { "code": "en", "name": "English" },
-     *   { "code": "pt", "name": "Portuguese" },
-     *   ...
-     * ]
-     *
-     * @return Lista de idiomas soportados con código y nombre
+     * @return lista de idiomas soportados
      */
     @GetMapping("/languages")
-    @Operation(summary = "Idiomas disponibles",
-            description = "Lista todos los idiomas soportados por LibreTranslate (100+)")
+    @Operation(
+            summary = "Idiomas disponibles",
+            description = "Lista todos los idiomas soportados por LibreTranslate (100+)"
+    )
     public ResponseEntity<List<LibreTranslateDTO.LanguageInfo>> getAvailableLanguages() {
+
         log.info("📋 Obteniendo idiomas disponibles");
 
         List<LibreTranslateDTO.LanguageInfo> languages =
@@ -256,33 +230,21 @@ public class I18nController {
     }
 
     /**
-     * Endpoint para probar traducción directa con LibreTranslate.
-     * Útil para debugging y pruebas sin usar caché ni base de datos.
+     * Endpoint de traducción directa usando LibreTranslate.
      *
-     * DIFERENCIA CON /translate:
-     * - /translate: usa estrategia de 4 niveles + caché
-     * - /translate/direct: llama DIRECTAMENTE a LibreTranslate
+     * <p>No utiliza caché ni base de datos. Recomendado únicamente para pruebas
+     * y debugging.</p>
      *
-     * EJEMPLO DE USO:
-     * POST /api/i18n/translate/direct?text=Hola mundo&source=es&target=en
-     *
-     * RESPUESTA:
-     * {
-     *   "original": "Hola mundo",
-     *   "sourceLanguage": "es",
-     *   "targetLanguage": "en",
-     *   "translated": "Hello world",
-     *   "timestamp": 1705234567890
-     * }
-     *
-     * @param text Texto a traducir
-     * @param source Idioma origen (o "auto" para detectar)
-     * @param target Idioma destino
-     * @return Texto traducido con metadatos
+     * @param text texto a traducir
+     * @param source idioma origen (o {@code auto})
+     * @param target idioma destino
+     * @return traducción con metadatos
      */
     @PostMapping("/translate/direct")
-    @Operation(summary = "Traducción directa con LibreTranslate",
-            description = "Traduce directamente sin usar caché ni base de datos (solo para testing)")
+    @Operation(
+            summary = "Traducción directa con LibreTranslate",
+            description = "Traduce directamente sin usar caché ni base de datos (solo para testing)"
+    )
     public ResponseEntity<Map<String, Object>> translateDirect(
             @RequestParam String text,
             @RequestParam(defaultValue = "auto") String source,
@@ -290,7 +252,8 @@ public class I18nController {
 
         log.info("🌐 Traducción directa: '{}' | {} → {}", text, source, target);
 
-        String translated = libreTranslateClient.translate(text, source, target);
+        String translated =
+                libreTranslateClient.translate(text, source, target);
 
         Map<String, Object> response = new HashMap<>();
         response.put("original", text);
@@ -303,34 +266,26 @@ public class I18nController {
     }
 
     /**
-     * Endpoint de prueba simple para verificar que el i18n funciona.
-     * Detecta el idioma desde el header HTTP "Accept-Language".
+     * Endpoint de prueba simple para verificar el funcionamiento de i18n.
      *
-     * EJEMPLO DE USO DESDE EL NAVEGADOR:
-     * GET /api/i18n/hello
-     * Header: Accept-Language: pt
+     * <p>El idioma se detecta a partir del header HTTP
+     * {@code Accept-Language}.</p>
      *
-     * RESPUESTA:
-     * "Análise de sentimiento concluída"
-     *
-     * EJEMPLO DE USO CON CURL:
-     * curl -H "Accept-Language: en" http://localhost:8080/api/i18n/hello
-     *
-     * RESPUESTA:
-     * "Sentiment analysis completed"
-     *
-     * @param lang Código de idioma desde header (auto-detectado)
-     * @return Mensaje de bienvenida traducido
+     * @param lang idioma solicitado desde el header
+     * @return mensaje traducido
      */
     @GetMapping("/hello")
-    @Operation(summary = "Prueba de traducción simple",
-            description = "Devuelve un mensaje de bienvenida en el idioma especificado (header Accept-Language)")
+    @Operation(
+            summary = "Prueba de traducción simple",
+            description = "Devuelve un mensaje de bienvenida en el idioma especificado (header Accept-Language)"
+    )
     public ResponseEntity<String> sayHello(
             @RequestHeader(value = "Accept-Language", defaultValue = "es") String lang) {
 
         log.info("👋 Saludo solicitado en '{}'", lang);
 
-        String message = translationService.translate("sentiment.analyze.success", lang);
+        String message =
+                translationService.translate("sentiment.analyze.success", lang);
 
         return ResponseEntity.ok(message);
     }

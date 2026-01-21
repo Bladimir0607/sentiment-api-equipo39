@@ -22,20 +22,26 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * Controlador de autenticación y gestión de usuarios.
+ * Controlador REST responsable de la autenticación y gestión básica de usuarios.
  *
- * Proporciona endpoints para el registro, inicio de sesión, gestión de tokens JWT
- * y operaciones relacionadas con la autenticación de usuarios en el sistema.
+ * <p>Proporciona endpoints para el registro de usuarios, inicio de sesión,
+ * generación y validación de tokens JWT, así como la obtención de información
+ * del usuario autenticado.</p>
  *
- * Todos los endpoints están disponibles sin autenticación excepto aquellos que
- * requieren un token válido para acceder a información del usuario actual.
+ * <p>Los endpoints públicos permiten el acceso sin autenticación, mientras que
+ * las operaciones relacionadas con el usuario actual requieren un token JWT válido.</p>
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
+ *
  */
 @Slf4j
 @RestController
 @RequestMapping("/auth")
-@SecurityRequirement(name = "Bearer Authentication")//linea agregada para el candado en swager
+@SecurityRequirement(name = "Bearer Authentication")
 @RequiredArgsConstructor
-@Tag(name = "Autentificacion", description = "Endpoints de autentificacion")
+@Tag(name = "Autenticación", description = "Endpoints de autenticación y gestión de usuarios")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -44,17 +50,19 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Autentica a un usuario y genera un token JWT de acceso.
+     * Auténtica a un usuario y genera un token JWT de acceso.
      *
-     * Verifica las credenciales del usuario (username y password) y, si son válidas,
-     * genera un token JWT que puede ser utilizado para acceder a endpoints protegidos.
+     * <p>Válida las credenciales proporcionadas (nombre de usuario y contraseña).
+     * Si la autenticación es exitosa, se genera un token JWT que permite acceder
+     * a los endpoints protegidos de la API.</p>
      *
-     * @param request DTO con las credenciales de autenticación
-     * @return ResponseEntity con el token JWT y datos del usuario o mensaje de error
+     * @param request objeto que contiene las credenciales de autenticación
+     * @return {@link ResponseEntity} con el token JWT y datos básicos del usuario,
+     *         o un mensaje de error en caso de credenciales inválidas
      */
     @Operation(
             summary = "Iniciar sesión",
-            description = "Autentica al usuario mediante sus credenciales y genera un token JWT que permitirá el acceso seguro a los recursos protegidos de la API."
+            description = "Autentica al usuario mediante sus credenciales y genera un token JWT para el acceso seguro a la API."
     )
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequestDTO request) {
@@ -73,7 +81,14 @@ public class AuthController {
 
             String token = jwtService.generateToken(user);
 
-            return ResponseEntity.ok(new AuthResponseDTO(token, "Bearer", user.getUsername(), user.getRole().name()));
+            return ResponseEntity.ok(
+                    new AuthResponseDTO(
+                            token,
+                            "Bearer",
+                            user.getUsername(),
+                            user.getRole().name()
+                    )
+            );
 
         } catch (Exception e) {
             log.error("Login error: {}", e.getMessage());
@@ -84,25 +99,22 @@ public class AuthController {
     /**
      * Registra un nuevo usuario en el sistema.
      *
-     * Crea una nueva cuenta de usuario con rol USER por defecto. Valida que el
-     * username y email no estén previamente registrados. Retorna un token JWT
-     * inmediatamente después del registro exitoso.
+     * <p>Crea una cuenta con rol {@code USER} por defecto, validando que el
+     * nombre de usuario y el correo electrónico no estén previamente registrados.
+     * Tras un registro exitoso, se genera automáticamente un token JWT.</p>
      *
-     * @param request DTO con los datos de registro del usuario
-     * @return ResponseEntity con el token JWT y datos del usuario o mensaje de error
+     * @param request objeto con los datos de registro del usuario
+     * @return {@link ResponseEntity} con el token JWT generado o un mensaje de error
      */
     @Operation(
             summary = "Registrar nuevo usuario",
-            description = "Crea una nueva cuenta de usuario en la plataforma utilizando los datos de registro proporcionados. " +
-                    "Al completarse correctamente, el usuario podrá iniciar sesión en el sistema."
+            description = "Crea una nueva cuenta de usuario y genera un token JWT al completar el registro exitosamente."
     )
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequestDTO request) {
         try {
             log.info("Registration attempt for user: {}", request.getEmail());
 
-            // Verificar si usuario ya existe
             if (userRepository.existsByUsername(request.getUsername())) {
                 return ResponseEntity.badRequest().body("Username already exists");
             }
@@ -111,7 +123,6 @@ public class AuthController {
                 return ResponseEntity.badRequest().body("Email already registered");
             }
 
-            // Crear nuevo usuario
             User user = User.builder()
                     .username(request.getUsername())
                     .email(request.getEmail())
@@ -123,10 +134,16 @@ public class AuthController {
 
             userRepository.save(user);
 
-            // Generar token automáticamente
             String token = jwtService.generateToken(user);
 
-            return ResponseEntity.ok(new AuthResponseDTO(token, "Bearer", user.getUsername(), user.getRole().name()));
+            return ResponseEntity.ok(
+                    new AuthResponseDTO(
+                            token,
+                            "Bearer",
+                            user.getUsername(),
+                            user.getRole().name()
+                    )
+            );
 
         } catch (Exception e) {
             log.error("Registration error: {}", e.getMessage());
@@ -137,16 +154,17 @@ public class AuthController {
     /**
      * Obtiene la información del usuario actualmente autenticado.
      *
-     * Extrae el token JWT del encabezado Authorization y retorna los datos
-     * del perfil del usuario sin incluir información sensible como la contraseña.
+     * <p>Extrae el token JWT del encabezado {@code Authorization} y retorna
+     * información básica del perfil del usuario, excluyendo datos sensibles
+     * como la contraseña.</p>
      *
-     * @param authHeader Encabezado Authorization con el token Bearer
-     * @return ResponseEntity con los datos del perfil del usuario o mensaje de error
+     * @param authHeader encabezado Authorization con el token Bearer
+     * @return {@link ResponseEntity} con los datos del perfil del usuario
+     *         o un mensaje de error si el token es inválido
      */
     @Operation(
             summary = "Obtener usuario autenticado",
-            description = "Retorna la información básica del usuario actualmente autenticado, " +
-                    "obtenida a partir del token JWT enviado en la solicitud."
+            description = "Retorna la información básica del usuario actualmente autenticado mediante el token JWT."
     )
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
@@ -157,15 +175,16 @@ public class AuthController {
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Retornar datos del usuario sin password
-            return ResponseEntity.ok(UserProfileDTO.builder()
-                    .username(user.getUsername())
-                    .email(user.getEmail())
-                    .fullName(user.getFullName())
-                    .role(user.getRole().name())
-                    .createdAt(user.getCreatedAt())
-                    .updatedAt(user.getUpdatedAt())
-                    .build());
+            return ResponseEntity.ok(
+                    UserProfileDTO.builder()
+                            .username(user.getUsername())
+                            .email(user.getEmail())
+                            .fullName(user.getFullName())
+                            .role(user.getRole().name())
+                            .createdAt(user.getCreatedAt())
+                            .updatedAt(user.getUpdatedAt())
+                            .build()
+            );
 
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid token");
@@ -173,23 +192,23 @@ public class AuthController {
     }
 
     /**
-     * Genera un nuevo token de acceso a partir de un token de actualización.
+     * Genera un nuevo token de acceso a partir de un token existente.
      *
-     * Permite renovar el token de acceso sin requerir nuevas credenciales,
-     * manteniendo la sesión activa. Valida que el token de actualización no haya expirado.
+     * <p>Permite renovar el token JWT sin necesidad de volver a autenticarse,
+     * siempre que el token proporcionado sea válido y no haya expirado.</p>
      *
-     * @param authHeader Encabezado Authorization con el token de actualización
-     * @return ResponseEntity con el nuevo token JWT o mensaje de error
+     * @param authHeader encabezado Authorization con el token Bearer
+     * @return {@link ResponseEntity} con un nuevo token JWT o mensaje de error
      */
     @Operation(
             summary = "Refrescar token JWT",
-            description = "Genera un nuevo token de acceso a partir de un token de actualización válido, " +
-                    "permitiendo mantener la sesión activa sin necesidad de volver a iniciar sesión."
+            description = "Genera un nuevo token de acceso a partir de un token válido, manteniendo la sesión activa."
     )
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authHeader) {
         try {
             String refreshToken = authHeader.substring(7);
+
             if (jwtService.isTokenExpired(refreshToken)) {
                 return ResponseEntity.status(401).body("Token expirado");
             }
@@ -199,7 +218,15 @@ public class AuthController {
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             String newToken = jwtService.generateToken(user);
-            return ResponseEntity.ok(new AuthResponseDTO(newToken, "Bearer", user.getUsername(), user.getRole().name()));
+
+            return ResponseEntity.ok(
+                    new AuthResponseDTO(
+                            newToken,
+                            "Bearer",
+                            user.getUsername(),
+                            user.getRole().name()
+                    )
+            );
 
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid refresh token");
@@ -209,36 +236,34 @@ public class AuthController {
     /**
      * Inicia el proceso de recuperación de contraseña.
      *
-     * Endpoint inicial para el proceso de recuperación de contraseña.
-     * En una implementación completa, enviaría un email con instrucciones
-     * para restablecer la contraseña.
+     * <p>Este endpoint representa el punto de entrada para la recuperación
+     * de contraseña. En una implementación completa, enviaría un correo
+     * electrónico con instrucciones para restablecerla.</p>
      *
-     * @param email Email del usuario que desea recuperar la contraseña
-     * @return ResponseEntity con mensaje informativo
+     * @param email correo electrónico del usuario
+     * @return {@link ResponseEntity} con un mensaje informativo
      */
     @Operation(
             summary = "Recuperar contraseña",
-            description = "Permite restablecer la contraseña de un usuario que no ha iniciado sesión, " +
-                    "validando su identidad mediante los datos proporcionados y generando una nueva credencial segura."
+            description = "Inicia el proceso de recuperación de contraseña para un usuario registrado."
     )
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
-        // Lógica para enviar email con link de recuperación
         return ResponseEntity.ok("Si el email existe, recibirás instrucciones");
     }
 
     /**
-     * Valida la vigencia y autenticidad de un token JWT.
+     * Válida la vigencia y autenticidad de un token JWT.
      *
-     * Verifica si el token proporcionado es válido, no ha expirado
-     * y pertenece a un usuario autorizado en el sistema.
+     * <p>Comprueba si el token proporcionado es válido, no ha expirado
+     * y pertenece a un usuario autorizado dentro del sistema.</p>
      *
-     * @param authHeader Encabezado Authorization con el token a validar
-     * @return ResponseEntity con el resultado de la validación
+     * @param authHeader encabezado Authorization con el token Bearer
+     * @return {@link ResponseEntity} indicando si el token es válido
      */
     @Operation(
             summary = "Validar token JWT",
-            description = "Verifica si un token JWT es válido, no ha expirado y pertenece a un usuario autorizado para acceder a la API."
+            description = "Verifica si un token JWT es válido y se encuentra vigente."
     )
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {

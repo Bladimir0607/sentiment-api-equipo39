@@ -8,17 +8,42 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Configuración de WebClient para comunicación con LibreTranslate.
+ * Clase de configuración responsable de definir el {@link WebClient}
+ * utilizado para la comunicación con el servicio externo LibreTranslate.
+ *
+ * <p>Este cliente HTTP reactivo permite realizar peticiones REST no bloqueantes,
+ * centralizando la URL base y los encabezados comunes requeridos para el
+ * intercambio de información en formato JSON.</p>
+ *
+ * <p>La configuración se apoya en {@link LibreTranslateProperties} para obtener
+ * los valores externos definidos en {@code application.yml}, facilitando
+ * la flexibilidad entre entornos (local, Docker, producción).</p>
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
  */
 @Configuration
 @RequiredArgsConstructor
 public class WebClientConfig {
 
+    /**
+     * Propiedades de configuración de LibreTranslate.
+     * Contiene la URL base y parámetros relacionados al servicio.
+     */
     private final LibreTranslateProperties properties;
 
     /**
-     * Bean de WebClient configurado para LibreTranslate.
-     * Incluye headers y configuración base.
+     * Crea y expone un {@link WebClient} configurado para LibreTranslate.
+     *
+     * <p>El cliente se inicializa con:</p>
+     * <ul>
+     *   <li>URL base del servicio LibreTranslate</li>
+     *   <li>Encabezado {@code Content-Type} en formato JSON</li>
+     *   <li>Encabezado {@code Accept} en formato JSON</li>
+     * </ul>
+     *
+     * @return instancia configurada de {@link WebClient}
      */
     @Bean
     public WebClient webClient() {

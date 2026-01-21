@@ -8,6 +8,11 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Propiedades de configuración para LibreTranslate.
  * Lee los valores desde application.yml bajo el prefijo 'libretranslate'
+ *
+ * @author Equipo Hackathon Oracle ONE - Backend
+ * @version 1.4
+ * @since 2026-01-21
+ *
  */
 @Getter
 @Setter

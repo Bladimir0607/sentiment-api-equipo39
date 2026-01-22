@@ -1,10 +1,12 @@
 package com.hackaton.sentiment.controller;
 
 import com.hackaton.sentiment.client.LibreTranslateClient;
+import com.hackaton.sentiment.service.JwtService;
 import com.hackaton.sentiment.service.TranslationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,6 +30,9 @@ class I18nControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
     private TranslationService translationService;
 
     @MockitoBean
@@ -39,6 +44,7 @@ class I18nControllerTest {
      * @throws Exception sí ocurre un error durante la prueba
      */
     @Test
+    @WithMockUser
     void getTranslation_shouldReturnTranslatedMessage() throws Exception {
         when(translationService.translate(any(), any()))
                 .thenReturn("Text cannot be empty");
@@ -57,6 +63,7 @@ class I18nControllerTest {
      * @throws Exception sí ocurre un error durante la prueba
      */
     @Test
+    @WithMockUser
     void getAllTranslations_shouldReturnMap() throws Exception {
         when(translationService.getAllTranslationsForLanguage("es"))
                 .thenReturn(Map.of("error.text.required", "El texto no puede estar vacío"));
@@ -72,6 +79,7 @@ class I18nControllerTest {
      * @throws Exception sí ocurre un error durante la prueba
      */
     @Test
+    @WithMockUser
     void sayHello_shouldReturnTranslatedMessage() throws Exception {
         when(translationService.translate(any(), any()))
                 .thenReturn("Análisis de sentimiento completado");

@@ -3,7 +3,6 @@ package com.hackaton.sentiment;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
 import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -14,7 +13,6 @@ import org.testcontainers.utility.DockerImageName;
  * @since 2026-01-21
  */
 @TestConfiguration(proxyBeanMethods = false)
-@Profile("containers")
 class TestcontainersConfiguration {
 
 	/**

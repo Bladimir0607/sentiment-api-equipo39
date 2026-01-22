@@ -6,13 +6,16 @@ import com.hackaton.sentiment.dto.response.SentimentResponseDTO;
 import com.hackaton.sentiment.dto.response.SentimentStatsResponseDTO;
 import com.hackaton.sentiment.exception.GlobalExceptionHandler;
 import com.hackaton.sentiment.exception.MlServiceException;
+import com.hackaton.sentiment.service.JwtService;
 import com.hackaton.sentiment.service.SentimentService;
 import com.hackaton.sentiment.service.TranslationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(SentimentController.class)
 @Import(GlobalExceptionHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
 class SentimentControllerTest {
 
     @Autowired
@@ -38,6 +42,12 @@ class SentimentControllerTest {
 
     @MockitoBean
     private SentimentService sentimentService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserDetails userDetails;
 
     @MockitoBean
     private TranslationService translationService;

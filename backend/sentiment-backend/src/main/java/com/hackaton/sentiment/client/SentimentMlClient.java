@@ -1,5 +1,7 @@
 package com.hackaton.sentiment.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hackaton.sentiment.dto.response.SentimentResponseDTO;
 import com.hackaton.sentiment.exception.MlServiceException;
 import com.hackaton.sentiment.util.Constants;
@@ -9,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,13 +41,12 @@ public class SentimentMlClient {
     /**
      * Logger de la clase para el registro de eventos informativos y de error.
      */
-    private static final Logger log =
-            LoggerFactory.getLogger(SentimentMlClient.class);
-
+    private static final Logger log = LoggerFactory.getLogger(SentimentMlClient.class);
     /**
      * Cliente REST utilizado para comunicarse con el microservicio de ML.
      */
     private final RestClient restClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Envía un texto al microservicio de Machine Learning para obtener
@@ -68,18 +71,64 @@ public class SentimentMlClient {
      */
     public SentimentResponseDTO predict(String text) {
         try {
-            log.info("Enviando texto al microservicio ML");
+            log.info("🤖 Enviando texto al microservicio ML: {} caracteres", text.length());
 
-            return restClient.post()
+            // 1. Enviar request y obtener respuesta como String
+            String responseBody = restClient.post()
                     .uri("/sentiment-explain")
                     .body(Map.of("text", text))
                     .retrieve()
-                    .body(SentimentResponseDTO.class);
+                    .body(String.class);
+
+            log.debug("📥 Respuesta cruda del ML: {}", responseBody);
+
+            // 2. Parsear manualmente porque el ML usa campos en español
+            JsonNode root = objectMapper.readTree(responseBody);
+
+            // 3. Extraer campos (el ML devuelve en español)
+            String prediction = null;
+            Double probability = null;
+            List<String> keywords = new ArrayList<>();
+
+            if (root.has("prevision")) {
+                prediction = root.get("prevision").asText();
+                log.debug("   ├─ Previsión encontrada: {}", prediction);
+            }
+
+            if (root.has("probabilidad")) {
+                probability = root.get("probabilidad").asDouble();
+                log.debug("   ├─ Probabilidad encontrada: {}", probability);
+            }
+
+            if (root.has("palabras_clave")) {
+                JsonNode keywordsNode = root.get("palabras_clave");
+                if (keywordsNode.isArray()) {
+                    for (JsonNode node : keywordsNode) {
+                        keywords.add(node.asText());
+                    }
+                }
+                log.debug("   ├─ Keywords encontradas: {}", keywords.size());
+            }
+
+            // 4. Validar que tenemos los datos mínimos
+            if (prediction == null || probability == null) {
+                log.error("❌ El ML devolvió una respuesta incompleta: {}", responseBody);
+                throw new MlServiceException("El servicio ML devolvió una respuesta incompleta");
+            }
+
+            log.info("✅ Respuesta ML procesada - Predicción: {}, Probabilidad: {}, Keywords: {}",
+                    prediction, probability, keywords.size());
+
+            // 5. Construir y retornar DTO
+            return SentimentResponseDTO.builder()
+                    .prediction(prediction)
+                    .probability(probability)
+                    .keywordsEs(keywords)  // Guardamos en español para referencia
+                    .build();
 
         } catch (Exception ex) {
-            log.error("Error llamando al microservicio ML", ex);
-            throw new MlServiceException(
-                    Constants.ML_SERVICE_ERROR, ex);
+            log.error("❌ Error llamando al microservicio ML: {}", ex.getMessage(), ex);
+            throw new MlServiceException(Constants.ML_SERVICE_ERROR, ex);
         }
     }
 }

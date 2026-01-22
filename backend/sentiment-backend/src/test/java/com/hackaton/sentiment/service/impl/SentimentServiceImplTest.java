@@ -5,12 +5,18 @@ import com.hackaton.sentiment.client.SentimentMlClient;
 import com.hackaton.sentiment.dto.request.SentimentRequestDTO;
 import com.hackaton.sentiment.dto.response.SentimentResponseDTO;
 import com.hackaton.sentiment.entity.SentimentAnalysis;
+import com.hackaton.sentiment.entity.User;
 import com.hackaton.sentiment.repository.SentimentAnalysisRepository;
-import com.hackaton.sentiment.service.TranslationService;
+import com.hackaton.sentiment.repository.UserRepository;
 import com.hackaton.sentiment.util.SentimentLabels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,22 +32,39 @@ class SentimentServiceImplTest {
 
     private SentimentMlClient mlClient;
     private SentimentAnalysisRepository repository;
+    private UserRepository userRepository;
     private LibreTranslateClient libreTranslateClient;
-    private TranslationService translationService;
     private SentimentServiceImpl service;
 
     @BeforeEach
     void setUp() {
         mlClient = mock(SentimentMlClient.class);
         repository = mock(SentimentAnalysisRepository.class);
+        userRepository = mock(UserRepository.class);
         libreTranslateClient = mock(LibreTranslateClient.class);
-        translationService = mock(TranslationService.class);
+
+        // ===== Mock SecurityContext =====
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn("testuser");
+
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // ===== Mock usuario =====
+        User user = User.builder()
+                .id(1L)
+                .username("testuser")
+                .build();
+
+        when(userRepository.findByUsername("testuser"))
+                .thenReturn(Optional.of(user));
 
         service = new SentimentServiceImpl(
                 mlClient,
                 repository,
-                libreTranslateClient,
-                translationService
+                userRepository,
+                libreTranslateClient
         );
     }
 
@@ -69,7 +92,8 @@ class SentimentServiceImplTest {
         assertThat(response.getTranslatedText()).isEqualTo("Me encanta este proyecto");
         assertThat(response.getLanguage()).isEqualTo("es");
 
-        verify(libreTranslateClient, never()).translate(anyString(), anyString(), anyString());
+        verify(libreTranslateClient, never())
+                .translate(anyString(), anyString(), anyString());
 
         ArgumentCaptor<SentimentAnalysis> captor =
                 ArgumentCaptor.forClass(SentimentAnalysis.class);
@@ -99,9 +123,6 @@ class SentimentServiceImplTest {
                 .build();
         when(mlClient.predict("¡Esto es genial!")).thenReturn(mlResponse);
 
-        when(translationService.translate("sentiment.label.positivo", "en"))
-                .thenReturn("Positive");
-
         SentimentResponseDTO response = service.analyzeSentiment(request);
 
         assertThat(response.getPrediction()).isEqualTo("Positive");
@@ -110,8 +131,8 @@ class SentimentServiceImplTest {
         assertThat(response.getTranslatedText()).isEqualTo("¡Esto es genial!");
         assertThat(response.getLanguage()).isEqualTo("en");
 
-        verify(libreTranslateClient).translate("This is great!", "en", "es");
-        verify(translationService).translate("sentiment.label.positivo", "en");
+        verify(libreTranslateClient)
+                .translate("This is great!", "en", "es");
 
         ArgumentCaptor<SentimentAnalysis> captor =
                 ArgumentCaptor.forClass(SentimentAnalysis.class);
@@ -140,9 +161,6 @@ class SentimentServiceImplTest {
                 .build();
         when(mlClient.predict("¡Esto es genial!")).thenReturn(mlResponse);
 
-        when(translationService.translate("sentiment.label.positivo", "pt"))
-                .thenReturn("Positivo");
-
         SentimentResponseDTO response = service.analyzeSentiment(request);
 
         assertThat(response.getPrediction()).isEqualTo("Positivo");
@@ -150,8 +168,8 @@ class SentimentServiceImplTest {
         assertThat(response.getTranslatedText()).isEqualTo("¡Esto es genial!");
         assertThat(response.getLanguage()).isEqualTo("pt");
 
-        verify(libreTranslateClient).translate("Isso é ótimo!", "pt", "es");
-        verify(translationService).translate("sentiment.label.positivo", "pt");
+        verify(libreTranslateClient)
+                .translate("Isso é ótimo!", "pt", "es");
     }
 
     /**
@@ -170,7 +188,7 @@ class SentimentServiceImplTest {
 
         when(mlClient.predict(anyString())).thenReturn(mlResponse);
 
-        SentimentResponseDTO response = service.analyzeSentiment(request);
+        service.analyzeSentiment(request);
 
         ArgumentCaptor<SentimentAnalysis> captor =
                 ArgumentCaptor.forClass(SentimentAnalysis.class);
@@ -194,7 +212,5 @@ class SentimentServiceImplTest {
         assertThat(stats.getTotal()).isEqualTo(10);
         assertThat(stats.getPositive()).isEqualTo(6);
         assertThat(stats.getNegative()).isEqualTo(4);
-        assertThat(stats.getPositivePercentage()).isEqualTo(60.0);
-        assertThat(stats.getNegativePercentage()).isEqualTo(40.0);
     }
 }

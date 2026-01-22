@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class SentimentAnalysisRepositoryTest {
 
-    // Esto levanta un MySQL real en Docker solo para este test
+    // Levanta un MySQL real en Docker solo para este test
     @Container
     @ServiceConnection
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0");
@@ -41,7 +41,7 @@ class SentimentAnalysisRepositoryTest {
 
     @Test
     void countByLabel_shouldWork() {
-        // 1. Crear usuario (MySQL real creará la tabla 'users' por las entidades)
+        // 1. Crear usuario
         User testUser = User.builder()
                 .username("jhona_" + System.currentTimeMillis())
                 .password("password")

@@ -12,7 +12,7 @@
 	<artifactId>sentiment-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>sentiment-backend</name>
-	<description>API de sentimientos de comentarios </description>
+	<description>API de sentimientos de comentarios</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -26,10 +26,15 @@
 		<tag/>
 		<url/>
 	</scm>
+
 	<properties>
 		<java.version>21</java.version>
+		<maven.javadoc.version>3.6.3</maven.javadoc.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+
 	<dependencies>
+		<!-- ========== DEPENDENCIAS PRINCIPALES ========== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -55,6 +60,8 @@
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+
+		<!-- ========== TEST ========== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
@@ -90,14 +97,15 @@
 			<artifactId>testcontainers-mysql</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- ========== DOCUMENTACIÓN ========== -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.8.14</version>
 		</dependency>
 
-		<!-- Nuevas dependencias -->
-		<!-- Cache  -->
+		<!-- ========== CACHE ========== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-cache</artifactId>
@@ -107,32 +115,29 @@
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
 
-		<!-- Para comunicación con LibreTranslate -->
-		<!-- Agregar en la sección <dependencies> -->
+		<!-- ========== LIBRE TRANSLATE ========== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 
+		<!-- ========== BASE DE DATOS ========== -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 
-		<!--		Dependencias seguridad -->
-
+		<!-- ========== SEGURIDAD ========== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-test</artifactId>
@@ -145,14 +150,12 @@
 			<artifactId>jjwt-api</artifactId>
 			<version>0.12.3</version>
 		</dependency>
-
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
 			<version>0.12.3</version>
 			<scope>runtime</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
@@ -160,22 +163,24 @@
 			<scope>runtime</scope>
 		</dependency>
 
-<!--		para .env-->
+		<!-- ========== VARIABLES DE ENTORNO ========== -->
 		<dependency>
 			<groupId>me.paulschwarz</groupId>
 			<artifactId>spring-dotenv</artifactId>
 			<version>4.0.0</version>
 		</dependency>
-
-
 	</dependencies>
 
 	<build>
 		<plugins>
+			<!-- ========== COMPILADOR ========== -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -184,17 +189,109 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+
+			<!-- ========== JAVADOC PROFESIONAL ========== -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.6.3</version>
+				<version>${maven.javadoc.version}</version>
 				<configuration>
+					<!-- CONFIGURACIÓN BÁSICA -->
 					<encoding>UTF-8</encoding>
-					<source>17</source>
+					<source>${java.version}</source>
 					<failOnError>false</failOnError>
 					<doclint>none</doclint>
+
+					<!-- Evita que Javadoc intente resolver links externos que fallan -->
+					<detectLinks>false</detectLinks>
+
+					<!-- Fuerza encoding completo para evitar warnings de caracteres -->
+					<docencoding>UTF-8</docencoding>
+					<charset>UTF-8</charset>
+
+					<!-- VISIBILIDAD -->
+					<show>private</show>
+					<nohelp>true</nohelp>
+					<author>true</author>
+					<version>true</version>
+					<use>true</use>
+
+					<!-- TÍTULOS PERSONALIZADOS -->
+					<windowtitle>🚀 API de Análisis de Sentimiento - Hackathon</windowtitle>
+					<doctitle><![CDATA[ <h1 style="color: #2c3e50; border-bottom: 3px solid #3498db;
+						padding-bottom: 15px;"> 📊 Sistema de Análisis de Sentimiento Multilingüe </h1> <h2 style="color:
+						#3498db;"> API REST con Traducción Automática - Hackathon </h2>
+					]]></doctitle>
+
+					<bottom><![CDATA[ <div style="text-align: center; padding: 20px; border-top: 2px solid #3498db; margin-top: 40px; color: #7f8c8d;">
+						<p><strong>🚀 Hackathon - Análisis de Sentimiento</strong></p>
+						<p>📅 Documentación generada: {0}</p> <p>💻 Equipo de Desarrollo | Spring Boot API REST</p>
+						<p>📍 Sistema con traducción en tiempo real usando LibreTranslate</p> </div>
+					]]></bottom>
+
+					<!-- PÁGINA DE RESUMEN -->
+					<overview>src/main/javadoc/overview.jsx</overview>
+
+					<!-- FORMATO ADICIONAL -->
+					<linksource>true</linksource>
+					<splitindex>true</splitindex>
+
+					<!-- GROUPING CORREGIDO -->
+					<groups>
+						<group>
+							<title>Controladores REST</title>
+							<packages>com.hackaton.sentiment.controller</packages>
+						</group>
+						<group>
+							<title>Servicios de Negocio</title>
+							<packages>com.hackaton.sentiment.service</packages>
+						</group>
+						<group>
+							<title>Acceso a Datos</title>
+							<packages>com.hackaton.sentiment.repository:com.hackaton.sentiment.entity</packages>
+						</group>
+						<group>
+							<title>DTOs y Modelos</title>
+							<packages>com.hackaton.sentiment.dto</packages>
+						</group>
+						<group>
+							<title>Configuración</title>
+							<packages>com.hackaton.sentiment.config:com.hackaton.sentiment.security</packages>
+						</group>
+						<group>
+							<title>Utilidades y Clientes</title>
+							<packages>com.hackaton.sentiment.util:com.hackaton.sentiment.client</packages>
+						</group>
+					</groups>
 				</configuration>
+
+				<executions>
+					<!-- EJECUTAR AUTOMÁTICAMENTE CON mvn package -->
+					<execution>
+						<id>generate-javadoc</id>
+						<phase>package</phase>
+						<goals>
+							<goal>javadoc</goal>
+						</goals>
+					</execution>
+
+					<!-- CREAR JAR DE DOCUMENTACIÓN -->
+					<execution>
+						<id>attach-javadocs</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<attach>true</attach>
+							<outputDirectory>${project.build.directory}/docs</outputDirectory>
+							<finalName>${project.artifactId}-${project.version}-javadoc</finalName>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
+
+			<!-- ========== SPRING BOOT ========== -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -209,5 +306,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

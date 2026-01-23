@@ -19,3 +19,10 @@ npm-debug.log*
 .idea/
 .DS_Store
 *.swp
+
+#modulos
+node_modules
+.env
+dist
+build
+.DS_Store

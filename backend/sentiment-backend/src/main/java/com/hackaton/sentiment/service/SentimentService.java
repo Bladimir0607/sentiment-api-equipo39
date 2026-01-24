@@ -6,6 +6,7 @@ import com.hackaton.sentiment.dto.response.SentimentStatsResponseDTO;
 import com.hackaton.sentiment.entity.SentimentAnalysis;
 import com.hackaton.sentiment.entity.User;
 import jakarta.transaction.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -69,4 +70,11 @@ public interface SentimentService {
      * @return lista de análisis del usuario
      */
     List<SentimentAnalysis> getUserAnalyses(Long userId);
+
+    /**
+     * Analiza un lote de textos desde un archivo CSV.
+     * @param file archivo CSV con columna 'text'
+     * @return lista de resultados de análisis
+     */
+    List<SentimentResponseDTO> analyzeSentimentBatch(MultipartFile file);
 }

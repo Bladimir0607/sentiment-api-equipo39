@@ -12,7 +12,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -104,5 +106,14 @@ public class SentimentController {
     @GetMapping("/my-analyses")
     public List<SentimentAnalysis> getMyAnalyses() {
         return sentimentService.getMyAnalyses();
+    }
+
+    @Operation(
+            summary = "Analizar sentimientos en lote (CSV)",
+            description = "Recibe un archivo CSV con una columna 'text' y devuelve una lista de predicciones."
+    )
+    @PostMapping(value = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public List<SentimentResponseDTO> analyzeBatch(@RequestParam("file") MultipartFile file) {
+        return sentimentService.analyzeSentimentBatch(file);
     }
 }

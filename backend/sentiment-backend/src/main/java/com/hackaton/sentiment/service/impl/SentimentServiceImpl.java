@@ -12,10 +12,17 @@ import com.hackaton.sentiment.repository.UserRepository;
 import com.hackaton.sentiment.service.SentimentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -408,5 +415,63 @@ public class SentimentServiceImpl implements SentimentService {
             throw new RuntimeException("Usuario no encontrado con ID: " + userId);
         }
         return repository.findByUserId(userId);
+    }
+
+    @Override
+    @Transactional
+    public List<SentimentResponseDTO> analyzeSentimentBatch(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new RuntimeException("El archivo está vacío");
+        }
+
+        List<SentimentResponseDTO> results = new ArrayList<>();
+        int processedCount = 0;
+        int errorCount = 0;
+
+        try (BufferedReader fileReader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
+             CSVParser csvParser = new CSVParser(fileReader,
+                     CSVFormat.DEFAULT.builder()
+                             .setHeader()
+                             .setSkipHeaderRecord(true)
+                             .setIgnoreHeaderCase(true)
+                             .setTrim(true)
+                             .build())) {
+
+            if (!csvParser.getHeaderMap().containsKey("text")) {
+                throw new RuntimeException("No se encontró la columna obligatoria 'text' en el CSV.");
+            }
+
+            for (CSVRecord csvRecord : csvParser) {
+                try {
+                    String text = csvRecord.get("text");
+
+                    if (text != null && !text.isBlank()) {
+                        SentimentRequestDTO request = SentimentRequestDTO.builder()
+                                .text(text)
+                                .language("es")
+                                .build();
+
+                        // 1. Llamamos a tu lógica existente
+                        SentimentResponseDTO response = this.analyzeSentiment(request);
+
+                        // 2. FORZAMOS el texto original en la respuesta para el Frontend
+                        response.setOriginalText(text); // <--- ESTA LÍNEA ES LA CLAVE
+
+                        results.add(response);
+                        processedCount++;
+                    }
+                } catch (Exception e) {
+                    errorCount++;
+                    log.warn("Error procesando fila {}: {}", csvRecord.getRecordNumber(), e.getMessage());
+                }
+            }
+
+            log.info("Procesamiento por lote finalizado. Éxitos: {}, Errores: {}", processedCount, errorCount);
+
+        } catch (Exception e) {
+            log.error("Error crítico procesando CSV: {}", e.getMessage());
+            throw new RuntimeException("Error al procesar el archivo: " + e.getMessage());
+        }
+        return results;
     }
 }

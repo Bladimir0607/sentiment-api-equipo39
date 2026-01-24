@@ -4,15 +4,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class SentimentRequestDTO {
 
     @Schema(example = "El servicio fue excelente", description = "Texto a analizar")
@@ -31,5 +29,6 @@ public class SentimentRequestDTO {
             regexp = "^(es|en|pt)$",
             message = "El idioma debe ser: es (Español), en (Inglés) o pt (Portugués)"
     )
+    @Builder.Default
     private String language = "es";  // Valor por defecto: español
 }

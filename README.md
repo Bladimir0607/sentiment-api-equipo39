@@ -13,4 +13,3 @@ Permite validar y consumir los endpoints de análisis de sentimientos desde el n
 
 ### 📄 Documentación Swagger
 La documentación interactiva de la API está disponible en el endpoint de Swagger, donde se pueden visualizar y probar todas las rutas expuestas por el backend.
-👉 http://140.84.161.47/swagger-ui.html

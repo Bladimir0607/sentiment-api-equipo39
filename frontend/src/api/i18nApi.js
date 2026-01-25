@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = 'http://localhost:8080/api/i18n';
+const API_URL = 'http://140.84.161.47:8080/api/i18n';
 
 export const getFullDictionary = async (lang) => {
     try {

@@ -20,19 +20,19 @@ const TechInfoModal = ({ isOpen, onClose }) => {
 
   const team = [
     { name: 'Jhonatan Osorio', link: 'https://www.linkedin.com/in/jhonatan-o25/' },
-    { name: 'Mario Perez', link: 'https://www.linkedin.com/in/mario-perez/' },
+    { name: 'Mario Perez', link: 'https://www.linkedin.com/in/mario-hamming/' },
     { name: 'Bladimir Ventura', link: 'https://www.linkedin.com/in/bladimir-v-15727b219' },
-    { name: 'Yohan Ospina', link: 'https://www.linkedin.com/in/yohan-sebastian-ospina-gonzalez/' },
+    { name: 'Yohan Ospina', link: 'https://www.linkedin.com/in/yohan-sebastian-ospina-gonz%C3%A1lez-92864729b/' },
     { name: 'Víctor Bardales', link: 'https://www.linkedin.com/in/hugobardales/' },
     { name: 'Julio Serrepe', link: 'https://www.linkedin.com/in/julio-alejandro-serrepe-ramirez/' },
   ];
 
   const docs = [
-    { name: 'Swagger UI', desc: t('modal.tech.swagger_desc'), url: 'http://localhost:8080/swagger-ui.html', icon: <Code2 size={18} className="text-purple-400" /> },
-    { name: 'JavaDoc', desc: t('modal.tech.javadoc_desc'), url: 'http://localhost:8080/docs/apidocs/index.html', icon: <FileCode2 size={18} className="text-blue-400" /> },
-    { name: 'JaCoCo Report', desc: t('modal.tech.jacoco_desc'), url: 'http://localhost:8080/docs/jacoco/index.html', icon: <ShieldCheck size={18} className="text-emerald-400" /> }
+    { name: 'Swagger UI', desc: t('modal.tech.swagger_desc'), url: 'http://140.84.161.47:8080/swagger-ui.html', icon: <Code2 size={18} className="text-purple-400" /> },
+    { name: 'JavaDoc', desc: t('modal.tech.javadoc_desc'), url: 'http://140.84.161.47:8080/docs/apidocs/index.html', icon: <FileCode2 size={18} className="text-blue-400" /> },
+    { name: 'JaCoCo Report', desc: t('modal.tech.jacoco_desc'), url: 'http://140.84.161.47:8080/docs/jacoco/index.html', icon: <ShieldCheck size={18} className="text-emerald-400" /> }
   ];
-
+  
   const isAdmin = user?.role === 'ADMIN';
 
   return (

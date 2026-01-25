@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BrainCircuit, BarChart3, MessageSquare, Languages, 
-  Zap, Code2, LogOut, Loader2, Menu, X, Sparkles, Activity, ShieldCheck
+  Zap, Code2, LogOut, Loader2, Menu, X, Sparkles, Activity, ShieldCheck,
+  FileSpreadsheet // Nuevo icono para el Batch
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
@@ -12,11 +13,12 @@ import { useAuth } from './context/AuthContext';
 import { useI18n } from './context/LanguageContext'; 
 import Login from './pages/Login';
 import Stats from './pages/Stats';
+import BatchAnalysis from './pages/BatchAnalysis'; // <--- IMPORTANTE: Asegúrate de que este archivo existe
 import TechInfoModal from './components/TechInfoModal';
 import StarBackground from './components/StarBackground';
 
 function App() {
-  const [view, setView] = useState('analyzer'); 
+  const [view, setView] = useState('analyzer'); // analyzer | stats | batch
   const { user, logout } = useAuth();
   const { t, lang, changeLanguage, loading: i18nLoading } = useI18n();
   
@@ -95,17 +97,47 @@ function App() {
             transition-all duration-300 z-40
             ${isMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
           `}>
-            {user.role === 'ADMIN' && (
+            
+            {/* Lógica de Navegación: Analyzer */}
+            <button
+              onClick={() => { setView('analyzer'); setIsMenuOpen(false); }}
+              className={`flex items-center gap-2 font-black text-sm md:text-xs tracking-[0.2em] transition-all px-4 py-2 rounded-full ${
+                view === 'analyzer' 
+                  ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20' 
+                  : 'text-gray-400 hover:text-white border border-transparent'
+              }`}
+            >
+              <Zap size={18} /> ANALYZER
+            </button>
+
+            {/* Nuevo Botón: Batch (Solo si quieres que todos o solo admin lo vean) */}
+            <button
+              onClick={() => { setView('batch'); setIsMenuOpen(false); }}
+              className={`flex items-center gap-2 font-black text-sm md:text-xs tracking-[0.2em] transition-all px-4 py-2 rounded-full ${
+                view === 'batch' 
+                  ? 'text-blue-400 bg-blue-500/10 border border-blue-500/20' 
+                  : 'text-gray-400 hover:text-white border border-transparent'
+              }`}
+            >
+              <FileSpreadsheet size={18} /> BATCH_CSV
+            </button>
+
+            {/* Lógica de Roles para el Botón de Stats */}
+            {(user.role === 'ADMIN' || user.role === 'USER') && (
               <button
                 onClick={() => { setView('stats'); setIsMenuOpen(false); }}
-                className={`flex items-center gap-2 font-black text-sm md:text-xs tracking-widest transition-colors ${
-                  view === 'stats' ? 'text-purple-400' : 'text-gray-400 hover:text-white'
+                className={`flex items-center gap-2 font-black text-sm md:text-xs tracking-[0.2em] transition-all px-4 py-2 rounded-full ${
+                  view === 'stats' 
+                    ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20' 
+                    : 'text-gray-400 hover:text-white border border-transparent'
                 }`}
               >
-                <BarChart3 size={18} /> {t('nav.stats')}
+                <BarChart3 size={18} /> 
+                {user.role === 'ADMIN' ? 'GLOBAL_STATS' : 'MY_HISTORY'}
               </button>
             )}
 
+            {/* Selector de Idiomas */}
             <div className="flex items-center gap-2 bg-white/5 px-4 py-2 md:px-3 md:py-1.5 rounded-xl border border-white/10 hover:border-purple-500/30 transition-all">
               <Languages size={16} className="text-purple-400" />
               <select
@@ -119,9 +151,12 @@ function App() {
               </select>
             </div>
 
+            {/* Perfil y Logout */}
             <div className="flex flex-col md:flex-row items-center gap-4 border-l border-white/10 pl-6">
               <div className="text-center md:text-right">
-                <p className="text-[10px] font-black text-purple-500 tracking-tighter uppercase">{user.role}</p>
+                <p className={`text-[9px] font-black tracking-[0.2em] uppercase ${user.role === 'ADMIN' ? 'text-red-500' : 'text-purple-500'}`}>
+                  {user.role}
+                </p>
                 <p className="text-base md:text-sm font-bold text-gray-200">{user.username}</p>
               </div>
               <button onClick={logout} className="p-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all">
@@ -134,7 +169,7 @@ function App() {
 
       <main className="relative z-10 pt-28 md:pt-36 pb-20 px-4 md:px-6 max-w-6xl mx-auto">
         <AnimatePresence mode="wait">
-          {view === 'analyzer' ? (
+          {view === 'analyzer' && (
             <motion.div key="analyzer" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
               <div className="lg:col-span-8 space-y-8">
@@ -170,7 +205,7 @@ function App() {
                       <div className="flex flex-wrap gap-2">
                         {[
                           t('prompt.happy') || 'Excelente interfaz y muy rapido',
-                          t('prompt.sad') || 'O sistema está muito lento hoje',
+                          t('prompt.sad') || 'O sistema está muy lento hoy',
                           t('prompt.neutral') || 'The analysis is complete'
                         ].map((suggestion, i) => (
                           <button
@@ -184,7 +219,6 @@ function App() {
                       </div>
                     </div>
 
-                    {/* SECCIÓN DE SEGURIDAD Y ACTIVIDAD */}
                     <div className="mt-8 flex items-center justify-between px-1">
                       <div className="flex items-center gap-4">
                         <div className="flex -space-x-2">
@@ -231,7 +265,7 @@ function App() {
                   </div>
                 </div>
 
-                {/* Card de Resultado Refinada con Keywords Dinámicas */}
+                {/* Resultado del Análisis */}
                 <AnimatePresence>
                   {result && (result.prediction || result.prevision) && (
                     <motion.div 
@@ -240,9 +274,11 @@ function App() {
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ type: "spring", damping: 20 }}
                       className={`p-8 md:p-10 rounded-[2.5rem] border-2 shadow-2xl overflow-hidden relative ${
-                        (result.prediction || result.prevision)?.toLowerCase() === 'positivo' 
+                        (result.prediction || result.prevision)?.toLowerCase().includes('posit') 
                          ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' 
-                         : 'border-red-500/30 bg-red-500/5 text-red-400'
+                           : (result.prediction || result.prevision)?.toLowerCase().includes('negat')
+                           ? 'border-red-500/30 bg-red-500/5 text-red-400'
+                           : 'border-amber-500/30 bg-amber-500/5 text-amber-400'
                       }`}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center relative z-10">
@@ -263,19 +299,17 @@ function App() {
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {getKeywords(text).map((word, i) => {
-                                // Color dinámico según el resultado
-                                const isPos = (result.prediction || result.prevision)?.toLowerCase() === 'positivo';
+                                const pred = (result.prediction || result.prevision)?.toLowerCase();
+                                const colorClass = pred.includes('posit') ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                                                 : pred.includes('negat') ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                                                 : 'bg-amber-500/10 border-amber-500/30 text-amber-400';
                                 return (
                                   <motion.span 
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.1 }}
                                     key={i} 
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold border transition-colors ${
-                                      isPos 
-                                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                                      : 'bg-red-500/10 border-red-500/30 text-red-400'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold border transition-colors ${colorClass}`}
                                   >
                                     <span className="opacity-50 mr-1">#</span>{word}
                                   </motion.span>
@@ -322,12 +356,12 @@ function App() {
                       <span className="text-emerald-400 font-bold tracking-widest">ONLINE</span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-500">LATENCY</span>
-                      <span className="text-purple-400">24ms</span>
+                      <span className="text-gray-500">USER_LEVEL</span>
+                      <span className="text-purple-400">{user.role}</span>
                     </div>
                     <div className="w-full bg-white/5 h-px my-2" />
                     <div className="text-[10px] text-gray-600 flex items-center gap-2">
-                       <Sparkles size={10} /> ENCRYPTED_CONNECTION_ACTIVE
+                        <Sparkles size={10} /> ENCRYPTED_SESSION_ACTIVE
                     </div>
                   </div>
                 </motion.div>
@@ -358,13 +392,26 @@ function App() {
                 </motion.div>
               </div>
             </motion.div>
-          ) : (
-            <Stats onBack={() => setView('analyzer')} />
           )}
+
+          {/* VISTA DE ESTADÍSTICAS */}
+          {view === 'stats' && (
+            <motion.div key="stats" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <Stats onBack={() => setView('analyzer')} />
+            </motion.div>
+          )}
+
+          {/* VISTA DE PROCESAMIENTO POR LOTES (CSV) */}
+          {view === 'batch' && (
+            <motion.div key="batch" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}>
+              <BatchAnalysis onBack={() => setView('analyzer')} />
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
-      {/* Floating Info Button */}
+      {/* Botón flotante Info */}
       <motion.button 
         whileHover={{ scale: 1.1, rotate: 5 }}
         whileTap={{ scale: 0.9 }}

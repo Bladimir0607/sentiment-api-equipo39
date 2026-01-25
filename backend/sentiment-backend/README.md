@@ -23,7 +23,7 @@
 
 ## 📋 Tabla de Contenidos
 
-- [🎯 Overview](#-overview)
+- [ 🎯 Overview](#-overview)
 - [✨ Características](#-características)
 - [🏗️ Arquitectura](#️-arquitectura)
 - [🚀 Quick Start](#-quick-start)
@@ -476,7 +476,17 @@ Este proyecto está licenciado bajo la **MIT License** - ver el archivo [LICENSE
 
 <div align="center">
 
-**Gracias a todos los contribuidores y a la comunidad Oracle ONE**
+**Gracias a todos los contribuidores** 
+
+💻 Mario Fernando Perez Martinez
+
+💻 Bladimir Antonio Ventura Paniagua
+
+💻 Jhonatan Osorio
+
+💻 Víctor Hugo Bardales Pérez
+
+**y a la comunidad Oracle ONE**
 
 [![Made with ❤️](https://img.shields.io/badge/Made%20with%20❤️-red.svg)]()
 

@@ -493,6 +493,3 @@ Este proyecto está licenciado bajo la **MIT License** - ver el archivo [LICENSE
 **Desarrollado con ☕ y 🎵 durante el Hackathon Oracle ONE 2026**
 
 </div>
-
-
-

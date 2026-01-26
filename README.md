@@ -486,6 +486,10 @@ Este proyecto está licenciado bajo la **MIT License** - ver el archivo [LICENSE
 
 💻 Víctor Hugo Bardales Pérez
 
+💻 Yohan Sebastian Ospina Gonzalez
+
+💻 Julio Alejandro Serrepe Ramírez
+
 **y a la comunidad Oracle ONE**
 
 [![Made with ❤️](https://img.shields.io/badge/Made%20with%20❤️-red.svg)]()

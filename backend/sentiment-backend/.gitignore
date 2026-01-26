@@ -1,0 +1,88 @@
+# =========================
+# Archivos de sistema
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Logs y temporales
+# =========================
+logs/
+*.log
+*.gz
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# =========================
+# Compilación / IDE
+# =========================
+/target/
+/out/
+/bin/
+*.class
+*.jar
+*.war
+*.iml
+.idea/
+*.ipr
+*.iws
+*.classpath
+*.project
+*.settings/
+
+# =========================
+# Configuración sensible
+# =========================
+.env
+*.key
+*.pem
+*.p12
+*.jks
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
+Dockerfile.old
+*.env
+
+# =========================
+# Base de datos / cache
+# =========================
+*.h2.db
+*.sqlite
+*.db
+*.redis
+
+# =========================
+# Pruebas
+# =========================
+/test-output/
+/surefire-reports/
+
+# =========================
+# Coverage (JaCoCo)
+# =========================
+jacoco.exec
+jacoco/
+target/jacoco/
+target/site/jacoco/
+
+# =========================
+# Jupyter Notebook
+# =========================
+*.ipynb
+.ipynb_checkpoints/
+
+# =========================
+# Misc
+# =========================
+*.orig
+
+# =========================
+# JavaDoc generado
+# =========================
+target/site/apidocs/

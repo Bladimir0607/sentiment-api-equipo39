@@ -1,0 +1,175 @@
+# ============================================================
+# CONFIGURACIÓN PRINCIPAL DE SPRING BOOT
+# ============================================================
+
+server:
+  port: 8080
+
+spring:
+  # ============================================================
+  # CONFIGURACIÓN DE PERFILES
+  # ============================================================
+  profiles:
+    active: local
+
+  # ============================================================
+  # CONFIGURACIÓN DE JPA/HIBERNATE
+  # ============================================================
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  # ============================================================
+  # CONFIGURACIÓN DE FLYWAY (MIGRACIONES)
+  # ============================================================
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    repair: true
+    out-of-order: true
+    validate-on-migrate: false
+    clean-on-validation-error: false
+
+  # ============================================================
+  # CONFIGURACIÓN DE INTERNACIONALIZACIÓN (I18N)
+  # ============================================================
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+  # ============================================================
+  # CONFIGURACIÓN DE REDIS (CACHÉ)
+  # ============================================================
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # ============================================================
+  # CONFIGURACIÓN DEL SISTEMA DE CACHÉ
+  # ============================================================
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "translation:"
+      use-key-prefix: true
+
+  # ============================================================
+  # CONFIGURACIÓN DE THREADS (TRADUCCIÓN CONCURRENTE)
+  # ============================================================
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 20
+        queue-capacity: 100
+
+# ============================================================
+# CONFIGURACIÓN DE LOGGING
+# ============================================================
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.flywaydb.core: debug
+    com.hackaton.sentiment.service: INFO
+    com.hackaton.sentiment.client: INFO
+    org.springframework.cache: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/sentiment-app.log
+
+# ============================================================
+# CONFIGURACIÓN DE LIBRETRANSLATE (TRADUCCIÓN AUTOMÁTICA)
+# ============================================================
+libretranslate:
+  url: http://localhost:5000
+  enabled: true
+  cache-enabled: true
+  timeout: 10000
+  retry-count: 2
+
+# ============================================================
+# CONFIGURACIÓN DEL MICROSERVICIO DE MACHINE LEARNING
+# ============================================================
+ml:
+  service:
+    url: http://localhost:8000
+    timeout: 15000
+
+# ============================================================
+# CONFIGURACIÓN DE CORS (FRONTEND)
+# ============================================================
+cors:
+  allowed-origins: "http://localhost:3000,http://localhost:5173,http://localhost:8081"
+  allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+  allowed-headers: "*"
+  allow-credentials: true
+
+# ============================================================
+# PERFIL: LOCAL (DESARROLLO CON WAMP)
+# ============================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: root
+    password: ${DB_ADMIN0_1_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+# ============================================================
+# PERFIL: DOCKER (PRODUCCIÓN CON DOCKER COMPOSE)
+# ============================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: jdbc:mysql://mysql:3306/sentimentdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: root
+    password: ${DB_ADMIN0_1_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+libretranslate:
+  url: ${LIBRETRANSLATE_URL:http://libretranslate:5000}
+
+ml:
+  service:
+    url: ${ML_SERVICE_URL:http://datascience:8000}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}

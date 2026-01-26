@@ -1,0 +1,331 @@
+# ============================================================
+# DOCKER COMPOSE - SENTIMENT API
+# ============================================================
+# Proyecto: Sentiment Analysis API - Hackathon Oracle ONE
+# Arquitectura: Backend (Spring Boot) + Frontend (React) +
+#               Data Science (Python) + MySQL + Redis + LibreTranslate
+# Equipo Hackathon Oracle ONE - Backend
+# version 1.4
+# since 2026-01-21
+# ============================================================
+
+services:
+  # ============================================================
+  # SERVICIO MYSQL (BASE DE DATOS)
+  # ============================================================
+  # Contenedor MySQL 8.0 para almacenar:
+  # - Análisis de sentimientos (tabla: sentiment_analysis)
+  # - Traducciones dinámicas (tabla: translations)
+  # - Idiomas disponibles (tabla: languages)
+  #
+  # Puerto: 3307 (local) -> 3306 (contenedor)
+  # Razón del puerto 3307: Evitar conflicto con MySQL local
+  # ============================================================
+
+  mysql:
+    image: mysql:8.0  # Imagen oficial de MySQL versión 8.0
+    container_name: sentiment-mysql  # Nombre fácil de identificar
+
+    # Variables de entorno desde archivo .env
+    env_file:
+      - .env
+
+    # Mapeo de puertos: [HOST]:[CONTENEDOR]
+    ports:
+      - "3307:3306"  # Puerto local 3307 para evitar conflictos
+
+    # Volúmenes persistentes (los datos no se pierden al reiniciar)
+    volumes:
+      - mysql-data:/var/lib/mysql  # Datos de la base de datos
+      - ./init-scripts:/docker-entrypoint-initdb.d  # Scripts SQL de inicialización
+
+    # Política de reinicio: reinicia automáticamente si falla
+    restart: unless-stopped
+
+    # Comando personalizado para compatibilidad con clientes MySQL
+    command: --default-authentication-plugin=mysql_native_password
+
+    # Health check: verifica que MySQL esté listo
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      start_period: 30s  # Tiempo de espera inicial para que MySQL inicie
+
+    # Red personalizada para comunicación entre servicios
+    networks:
+      - sentiment-network
+
+  # ============================================================
+  # SERVICIO REDIS (SISTEMA DE CACHÉ)
+  # ============================================================
+  # Redis almacena traducciones en memoria para mejorar rendimiento:
+  # - Cache de traducciones frecuentes (TTL: 1 hora)
+  # - Política LRU: elimina automáticamente datos menos usados
+  # - Persistencia AOF: guarda cambios en disco
+  #
+  # Puerto: 6379 (estándar de Redis)
+  # Memoria máxima: 256MB
+  # ============================================================
+
+  redis:
+    image: redis:alpine  # Imagen ligera de Redis
+    container_name: sentiment-redis
+
+    # Puerto estándar de Redis
+    ports:
+      - "6379:6379"
+
+    # Configuración personalizada de Redis:
+    # - appendonly yes: Persistencia AOF (Append Only File)
+    # - maxmemory 256mb: Límite de memoria
+    # - maxmemory-policy allkeys-lru: Elimina claves menos usadas cuando se llena
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+    restart: unless-stopped
+
+    # Health check: verifica que Redis responda
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+
+    networks:
+      - sentiment-network
+
+  # ============================================================
+  # SERVICIO LIBRETRANSLATE (TRADUCCIÓN AUTOMÁTICA CON IA)
+  # ============================================================
+  # LibreTranslate es un servicio de traducción automática de código abierto
+  # que usa modelos de IA para traducir entre 100+ idiomas.
+  #
+  # CONFIGURACIÓN IMPORTANTE:
+  # - Limitado a 3 idiomas (en, es, pt) para optimizar recursos
+  # - Esto reduce el tiempo de inicio y el uso de memoria
+  # - Si necesitas más idiomas, modifica LT_LOAD_ONLY
+  #
+  # Puerto: 5000
+  # Memoria: 10GB (los modelos de IA requieren RAM)
+  # Tiempo de inicio: ~90 segundos (carga de modelos)
+  # ============================================================
+
+  libretranslate:
+    image: libretranslate/libretranslate  # Imagen oficial
+    container_name: sentiment-libretranslate
+
+    # Puerto donde escucha el servicio
+    ports:
+      - "5000:5000"
+
+    # Variables de entorno para configurar LibreTranslate
+    environment:
+      # CRÍTICO: Idiomas a cargar (limitar para mejor rendimiento)
+      # Opciones: "en,es,pt" (actual) o "" (todos los idiomas - más lento)
+      LT_LOAD_ONLY: "en,es,pt"  # Solo inglés, español y portugués
+
+      # No actualizar modelos automáticamente (estabilidad)
+      LT_UPDATE_MODELS: "false"
+
+      # Número de hilos para procesamiento concurrente
+      LT_THREADS: "2"
+
+      # Idiomas por defecto (el backend los sobrescribe)
+      LT_DEFAULT_FROM: "es"  # Origen predeterminado
+      LT_DEFAULT_TO: "es"    # Destino predeterminado
+
+      # Sin autenticación para desarrollo (en producción usar API keys)
+      LT_API_KEYS: "false"
+
+    restart: unless-stopped
+
+    # Health check: verifica que LibreTranslate esté listo
+    # NOTA: Puede tardar hasta 90 segundos en cargar los modelos de IA
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:5000 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+    # Límites de recursos (IMPORTANTE para modelos de IA)
+    deploy:
+      resources:
+        limits:
+          memory: 10G   # Máximo 10GB de RAM
+        reservations:
+          memory: 10G   # Reservar mínimo 10GB al inicio
+
+    networks:
+      - sentiment-network
+
+  # ============================================================
+  # SERVICIO BACKEND (SPRING BOOT + JAVA 21)
+  # ============================================================
+  # API REST principal del proyecto:
+  # - Endpoints de análisis de sentimiento
+  # - Endpoints de internacionalización (i18n)
+  # - Integración con MySQL, Redis y LibreTranslate
+  # - Comunicación con microservicio de Data Science
+  #
+  # Puerto: 8080
+  # Framework: Spring Boot 4.0
+  # Java: 21
+  # ============================================================
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: sentiment-backend
+
+    ports:
+      - "8080:8080"
+
+    # 🔥 VOLÚMENES PARA SINCRONIZACIÓN AUTOMÁTICA
+    volumes:
+      # 1. Sincroniza el código fuente Java
+      - ./src:/app/src
+
+      # 2. Sincroniza recursos (application.yml, i18n, etc.)
+      - ./src/main/resources:/app/resources
+
+      # 3. Cache de Maven (para builds más rápidos)
+      - ~/.m2:/root/.m2
+
+      # 4. Logs (opcional, para ver logs persistente)
+      - ./logs:/app/logs
+
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+      # 🔥 HABILITAR SPRING DEVTOOLS PARA HOT RELOAD
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/sentimentdb
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_ADMIN0_1_PASSWORD}
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      LIBRETRANSLATE_URL: http://libretranslate:5000
+      ML_SERVICE_URL: http://datascience:8000
+
+      JWT_SECRET: 8jLc0f8Tz/b3CEIIu5u5o7W6KbFc3cWWnmlQMULdSqA=
+      JWT_EXPIRATION: 86400000
+
+    depends_on:
+      - libretranslate
+      - mysql
+      - redis
+
+    restart: unless-stopped
+
+    # 🔥 HEALTH CHECK PARA EL BACKEND
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - sentiment-network
+
+
+#  # ============================================================
+#  # SERVICIO DATA SCIENCE (PYTHON + MACHINE LEARNING)
+#  # ============================================================
+#  # Microservicio de análisis de sentimiento con Machine Learning:
+#  # - Modelo entrenado con TF-IDF + Logistic Regression
+#  # - Endpoint: POST /sentiment (recibe texto, devuelve predicción)
+#  # - Respuesta: { "prediction": "Positivo", "probability": 0.87 }
+#  #
+#  # Puerto: 8000
+#  # Framework: FastAPI o Flask (Python)
+#  # ============================================================
+#
+#  datascience:
+#    # Construir imagen desde Dockerfile del equipo de Data Science
+#    build:
+#      context: ./datascience # Carpeta del proyecto de Data Science
+#      dockerfile: Dockerfile
+#
+#    container_name: sentiment-datascience
+#
+#    # Puerto del microservicio de ML
+#    ports:
+#      - "8000:8000"
+#
+#    # Variables de entorno (si el equipo de DS las necesita)
+#    # environment:
+#    #   MODEL_PATH: /app/models/sentiment_model_1.3.joblib
+#
+#    restart: unless-stopped
+#
+#    networks:
+#      - sentiment-network
+#
+#  # ============================================================
+#  # SERVICIO FRONTEND (REACT)
+#  # ============================================================
+#  # Aplicación web en React para interfaz de usuario:
+#  # - Formulario de análisis de sentimiento
+#  # - Selector de idioma (ES, EN, PT)
+#  # - Visualización de resultados y estadísticas
+#  # - Integración con sistema de traducción i18n
+#  #
+#  # Puerto: 3000 (local) -> 80 (contenedor - nginx)
+#  # Framework: React
+#  # Build: Producción (optimizado)
+#  # ============================================================
+#
+#  frontend:
+#    # Construir imagen desde Dockerfile del equipo de Frontend
+#    build:
+#      context: ./frontend  # Carpeta del proyecto frontend
+#      dockerfile: Dockerfile
+#
+#    container_name: sentiment-frontend
+#
+#    # Puerto: React se sirve con nginx en puerto 80 dentro del contenedor
+#    ports:
+#      - "3000:80"  # Acceder en http://localhost:3000
+#
+#    # Variables de entorno para React (REACT_APP_* se inyectan en build)
+#    environment:
+#      VITE_API_BASE_URL=http://localhost:8080  # URL del backend
+#
+#    # Espera que el backend esté listo
+#    depends_on:
+#      - backend
+#
+#    restart: unless-stopped
+#
+#    networks:
+#      - sentiment-network
+
+# ============================================================
+# VOLÚMENES PERSISTENTES
+# ============================================================
+# Los volúmenes permiten que los datos persistan al reiniciar contenedores
+# - mysql-data: Almacena la base de datos MySQL
+# ============================================================
+
+volumes:
+  mysql-data:
+    driver: local  # Almacenamiento local en el host
+
+# ============================================================
+# CONFIGURACIÓN DE REDES
+# ============================================================
+# Red aislada para comunicación segura entre servicios
+# - Todos los servicios pueden comunicarse entre sí usando sus nombres
+# - Ejemplo: backend puede conectarse a MySQL usando "mysql:3306"
+# ============================================================
+
+networks:
+  sentiment-network:
+    driver: bridge  # Red tipo bridge (default de Docker)

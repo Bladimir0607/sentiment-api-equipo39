@@ -915,8 +915,9 @@ Para asegurar la salud del sistema en vivo, utilizamos comandos de monitoreo en 
 ```bash
 docker logs -f --tail 100 sentiment-backend
 ```
+```bash
 docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
----
+```
 ### 🚀 Backend desplegado en Oracle Cloud Infrastructure (OCI)
 El backend del proyecto se encuentra desplegado y en ejecución sobre Oracle Cloud Infrastructure (OCI).
 Desde esta dirección IP se puede acceder al servicio de análisis de sentimientos y probar sus endpoints directamente.

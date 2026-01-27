@@ -13,7 +13,7 @@
 1. [🖌️ Front-End](#visión-general)
 2. [🖥️ Back-End](#tabla-de-contenidos)
 3. [🧠 Data Science & Modelo](#-data-science--modelo)
-4. [ ☁️ Infraestructura OCI & DevOps ](#Especificaciones-del-Servidor)
+4. [☁️ Infraestructura OCI & DevOps](#️-infraestructura-oci--devops)
 5. [🙏 Agradecimientos](#-agradecimientos) 
 
 ---

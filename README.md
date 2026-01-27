@@ -914,7 +914,7 @@ Para asegurar la salud del sistema en vivo, utilizamos comandos de monitoreo en 
 **Ver logs en tiempo real:**
 ```bash
 docker logs -f --tail 100 sentiment-backend
-
+```
 docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
 ---
 ### 🚀 Backend desplegado en Oracle Cloud Infrastructure (OCI)

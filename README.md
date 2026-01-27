@@ -26,12 +26,24 @@ El dashboard traduce las respuestas del motor de IA en **insights visuales inmed
 
 La aplicación está pensada para **usuarios técnicos y analistas**, con roles administrativos y acceso a módulos experimentales (*Labs*).
 
-### Integrantes (Frontend Team)
-
+### Integrantes (Team)
 - **Desarrollador Frontend Principal:** Jhonatan Osorio
 - **Apoyo en Integración Backend / IA:**
-  - Equipo Data-science
-  - Equipo Backend
+  - Equipo Data-science:
+
+💻 Yohan Sebastian Ospina Gonzalez
+
+💻 Julio Alejandro Serrepe Ramírez
+
+  - Equipo Backend:
+
+💻 Víctor Hugo Bardales Pérez
+
+💻 Mario Fernando Perez Martinez
+
+💻 Bladimir Antonio Ventura Paniagua
+
+💻 Jhonatan Osorio
 
 ### Módulos de la Interfaz
 
@@ -820,22 +832,95 @@ Ejemplos con reseñas de productos varios de "Amazon" y respuestas del modelo:
 - Entrenar modelos especializados a los idiomas disponibles en el frontend y que son traducidos en el backend.
 - Mejorar cómo el modelo entienda las negaciones de las palabras positivas.
 
----
-
-
-### 🚀 Backend desplegado en Oracle Cloud Infrastructure (OCI)
-El backend del proyecto se encuentra desplegado y en ejecución sobre Oracle Cloud Infrastructure (OCI).
-Desde esta dirección IP se puede acceder al servicio de análisis de sentimientos y probar sus endpoints directamente.
-
-### 🌐 IP pública del backend (incluye documentación Swagger)
-Permite validar y consumir los endpoints de análisis de sentimientos desde el navegador o herramientas como Postman.
-
-### 👉 http://140.84.161.47/
-
-### 📄 Documentación Swagger
-La documentación interactiva de la API está disponible en el endpoint de Swagger, donde se pueden visualizar y probar todas las rutas expuestas por el backend.
 
 ---
+
+## ☁️ Infraestructura OCI & DevOps
+
+**Despliegue escalable y contenerizado en Oracle Cloud Infrastructure**
+
+![Oracle Cloud](https://img.shields.io/badge/Oracle_Cloud-F80000?style=for-the-badge&logo=oracle&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker_Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Bash](https://img.shields.io/badge/Bash-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)
+
+### Visión General
+
+La plataforma **SentimAI** se encuentra desplegada en una instancia de computación de alto rendimiento en **Oracle Cloud Infrastructure (OCI)**. Se optó por una arquitectura **Cloud-Native** basada 100% en contenedores Docker, lo que garantiza la consistencia entre los entornos de desarrollo y producción, facilitando la escalabilidad horizontal y el mantenimiento.
+
+### 🏗️ Especificaciones del Servidor
+
+El entorno productivo corre sobre una máquina virtual (VM) optimizada con las siguientes características:
+
+| Recurso | Especificación | Propósito |
+| :--- | :--- | :--- |
+| **Proveedor** | Oracle Cloud Infrastructure (OCI) | Infraestructura nube |
+| **S.O.** | Ubuntu 22.04 LTS (Jammy Jellyfish) | Sistema base estable y seguro |
+| **Container Engine** | Docker 27.x + Docker Compose | Orquestación de microservicios |
+| **Almacenamiento** | Block Volume (Boot Volume) | Persistencia de datos (MySQL/Redis) |
+| **Acceso** | SSH (Key-based Authentication) | Administración remota segura |
+
+### 🔄 Flujo de Despliegue (CI/CD Strategy)
+
+Implementamos una estrategia de despliegue basada en imágenes inmutables alojadas en **Docker Hub**. Esto elimina el problema de *"funciona en mi máquina"* y asegura que el servidor siempre ejecute la versión exacta aprobada.
+
+1.  **Build (Local):** Se compila el código Java/Python y se construyen las imágenes Docker.
+    ```bash
+    docker build -t hamminghk/sentiment-backend:v10 .
+    ```
+
+2.  **Push (Registry):** Las imágenes se suben al registro público.
+    ```bash
+    docker push hamminghk/sentiment-backend:v10
+    ```
+
+3.  **Deploy (OCI):** El servidor descarga la última versión y recrea los contenedores sin tiempo de inactividad perceptible.
+    ```bash
+    docker compose up -d --force-recreate
+    ```
+
+### 🛡️ Seguridad y Redes (VCN)
+
+La seguridad perimetral se gestiona mediante las **Listas de Seguridad (Security Lists)** de la VCN (Virtual Cloud Network) de Oracle, permitiendo solo el tráfico estrictamente necesario.
+
+#### Configuración de Puertos (Ingress Rules)
+
+| Puerto | Protocolo | Servicio | Descripción |
+| :--- | :--- | :--- | :--- |
+| **22** | TCP | SSH | Acceso administrativo (restringido) |
+| **8080** | TCP | Backend API | Acceso público a la API Spring Boot |
+| **8000** | TCP | ML Service | Comunicación interna (Backend <-> ML) |
+| **5000** | TCP | LibreTranslate | Servicio de traducción (Internal/Public) |
+| **3306** | TCP | MySQL | Base de datos (Solo localhost/Docker network) |
+
+> **Nota de Seguridad:** La base de datos y Redis no están expuestos a internet; solo son accesibles por los otros contenedores dentro de la red privada de Docker.
+
+### 🐳 Orquestación de Servicios
+
+Utilizamos `docker-compose` para definir la infraestructura como código (IaC). Esto permite levantar todo el ecosistema con un solo comando.
+
+**Servicios activos en producción:**
+
+* `sentiment-backend`: El núcleo de la aplicación (Spring Boot).
+* `sentiment-ml`: Microservicio de Inteligencia Artificial (Python/FastAPI).
+* `libretranslate`: Motor de traducción offline.
+* `mysql-db`: Base de datos relacional para usuarios y logs.
+* `redis-cache`: Caché de alto rendimiento para traducciones.
+
+### 📊 Monitoreo y Mantenimiento
+
+Para asegurar la salud del sistema en vivo, utilizamos comandos de monitoreo en tiempo real directamente en la instancia OCI:
+
+**Ver logs en tiempo real:**
+```bash
+docker logs -f --tail 100 sentiment-backend
+
+docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+---
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está licenciado bajo la **MIT License** - ver el archivo [LICENSE](LICENSE) para detalles.

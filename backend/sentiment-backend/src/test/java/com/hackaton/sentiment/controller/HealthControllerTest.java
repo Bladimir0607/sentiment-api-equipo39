@@ -1,8 +1,11 @@
 package com.hackaton.sentiment.controller;
 
+import com.hackaton.sentiment.service.JwtService;
 import com.hackaton.sentiment.service.TranslationService;
+import com.hackaton.sentiment.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -18,10 +21,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @since 2026-01-21
  */
 @WebMvcTest(HealthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class HealthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserService userService;
 
     @MockitoBean
     private TranslationService translationService;

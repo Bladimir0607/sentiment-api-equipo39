@@ -8,7 +8,9 @@ desktop.ini
 # =========================
 # Logs y temporales
 # =========================
+logs/
 *.log
+*.gz
 *.tmp
 *.swp
 *.swo
@@ -60,7 +62,14 @@ Dockerfile.old
 # =========================
 /test-output/
 /surefire-reports/
-*.log
+
+# =========================
+# Coverage (JaCoCo)
+# =========================
+jacoco.exec
+jacoco/
+target/jacoco/
+target/site/jacoco/
 
 # =========================
 # Jupyter Notebook
@@ -71,11 +80,9 @@ Dockerfile.old
 # =========================
 # Misc
 # =========================
-*.bak
 *.orig
-.idea/
-.idea/
-.idea/
 
+# =========================
 # JavaDoc generado
+# =========================
 target/site/apidocs/
